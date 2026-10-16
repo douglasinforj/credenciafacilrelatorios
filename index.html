@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>CredenciaFácil Relatórios</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+  /* ---------- Paleta CredenciaFácil ---------- */
+  :root {
+    --cf-primary:   #2563eb;
+    --cf-primary-2: #7c3aed;
+    --cf-success:   #10b981;
+    --cf-danger:    #ef4444;
+    --cf-warn:      #f59e0b;
+    --cf-bg:        #f3f4f6;
+    --cf-card:      #ffffff;
+    --cf-text:      #111827;
+    --cf-muted:     #6b7280;
+    --cf-border:    #e5e7eb;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--cf-bg); margin: 0; padding: 24px; color: var(--cf-text);
+  }
+  .container {
+    max-width: 1200px; margin: 0 auto; background: var(--cf-card);
+    padding: 24px; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  }
+
+  /* ---------- Marca ---------- */
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 20px; padding-bottom: 16px;
+    border-bottom: 2px solid var(--cf-border);
+  }
+  .brand .logo {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--cf-primary), var(--cf-primary-2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(37,99,235,.35);
+    flex-shrink: 0;
+  }
+  .brand .logo svg { width: 28px; height: 28px; display: block; }
+  .brand .nome {
+    font-size: 20px; font-weight: 800; color: var(--cf-text);
+    line-height: 1.1;
+  }
+  .brand .nome span { color: var(--cf-primary); }
+  .brand .sub {
+    font-size: 11px; color: var(--cf-muted); margin-top: 3px;
+    letter-spacing: .06em; text-transform: uppercase; font-weight: 600;
+  }
+  .brand .versao {
+    margin-left: auto; font-size: 11px; color: var(--cf-muted);
+    background: var(--cf-bg); padding: 4px 10px; border-radius: 999px;
+    font-weight: 600;
+  }
+
+  h2 { font-size: 15px; margin: 20px 0 8px; color: #374151; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  input[type="file"], select, input[type="text"] {
+    padding: 8px 12px; border: 1px solid #d1d5db;
+    border-radius: 8px; background: #fff; font-size: 14px;
+    font-family: inherit;
+  }
+  button {
+    padding: 10px 18px; border: none; border-radius: 8px;
+    background: var(--cf-primary); color: #fff; font-weight: 600;
+    cursor: pointer; font-size: 14px; transition: .15s;
+  }
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  button.sec { background: var(--cf-border); color: var(--cf-text); }
+  button.sec:hover { background: #d1d5db; }
+
+  #camposBox {
+    display: none; border: 1px solid var(--cf-border); border-radius: 10px;
+    padding: 14px; background: #fafafa; margin-bottom: 16px;
+  }
+  #camposBox .tools { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  #camposLista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px 14px; max-height: 260px; overflow-y: auto; padding: 6px 2px;
+  }
+  #camposLista label {
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+    cursor: pointer; padding: 4px 6px; border-radius: 6px;
+  }
+  #camposLista label:hover { background: #eef2ff; }
+  #camposLista input[type="checkbox"] { accent-color: var(--cf-primary); }
+
+  /* ---------- Barra de busca ---------- */
+  .buscaBox {
+    display: none;
+    background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+    border: 1px solid #bfdbfe; border-radius: 12px;
+    padding: 14px 16px; margin: 16px 0;
+  }
+  .buscaHeader {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .buscaHeader .icon {
+    width: 22px; height: 22px; color: var(--cf-primary);
+  }
+  .buscaHeader .titulo {
+    font-size: 13px; font-weight: 700; color: #1e40af;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .buscaHeader .contador {
+    margin-left: auto; font-size: 12px; color: #1e40af;
+    background: #fff; padding: 4px 10px; border-radius: 999px;
+    font-weight: 600; border: 1px solid #bfdbfe;
+  }
+  .buscaCampos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .buscaCampos .campo {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .buscaCampos label {
+    font-size: 11px; color: #1e40af; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .buscaCampos input {
+    border: 1px solid #bfdbfe; background: #fff;
+    padding: 8px 12px; border-radius: 8px; font-size: 13px;
+    transition: .15s;
+  }
+  .buscaCampos input:focus {
+    outline: none; border-color: var(--cf-primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+  }
+  .buscaAcoes {
+    display: flex; justify-content: flex-end; gap: 8px;
+    margin-top: 10px;
+  }
+  .buscaAcoes button {
+    padding: 6px 12px; font-size: 12px;
+  }
+  .buscaVazia {
+    text-align: center; padding: 24px; color: var(--cf-muted);
+    font-size: 13px;
+  }
+
+  /* KPIs */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin: 12px 0 20px;
+  }
+  .kpi {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi .label { font-size: 12px; color: #1e40af; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .value { font-size: 26px; font-weight: 700; color: #1e3a8a; margin-top: 4px; }
+  .kpi.green { background: linear-gradient(135deg,#ecfdf5,#d1fae5); border-color:#a7f3d0; }
+  .kpi.green .label { color:#065f46; } .kpi.green .value { color:#064e3b; }
+  .kpi.amber { background: linear-gradient(135deg,#fffbeb,#fef3c7); border-color:#fde68a; }
+  .kpi.amber .label { color:#92400e; } .kpi.amber .value { color:#78350f; }
+  .kpi.rose { background: linear-gradient(135deg,#fef2f2,#fee2e2); border-color:#fecaca; }
+  .kpi.rose .label { color:#991b1b; } .kpi.rose .value { color:#7f1d1d; }
+
+  /* Grid de gráficos */
+  .graficos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px; margin-bottom: 20px;
+  }
+  .card {
+    background: #fff; border: 1px solid var(--cf-border); border-radius: 10px;
+    padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  }
+  .card h3 {
+    margin: 0 0 8px; font-size: 13px; color: #374151;
+    font-weight: 600; letter-spacing: .02em;
+  }
+  .card canvas { width: 100% !important; height: 220px !important; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+  th, td { padding: 8px; border-bottom: 1px solid var(--cf-border); text-align: left; }
+  th { background: #f9fafb; }
+  .status { font-size: 13px; color: #374151; }
+  .tag {
+    display: inline-block; background: #dbeafe; color: #1e40af;
+    font-size: 12px; padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+  }
+  mark {
+    background: #fef08a; padding: 0 2px; border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ---------- MARCA ---------- -->
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 2l8 4v6c0 5-3.4 8.9-8 10-4.6-1.1-8-5-8-10V6l8-4z"
+              stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nome">Credencia<span>Fácil</span> Relatórios</div>
+      <div class="sub">Gerador de relatórios em PDF</div>
+    </div>
+    <div class="versao">v1.1.0</div>
+  </div>
+
+  <div class="row">
+    <input type="file" id="csvFile" accept=".csv,text/csv" />
+    <div class="status" id="status">Selecione um arquivo CSV para começar.</div>
+  </div>
+
+  <!-- ETAPA 1: seleção de campos -->
+  <div id="camposBox">
+    <h2>1. Escolha os campos que deseja usar <span class="tag" id="contadorCampos">0 selecionados</span></h2>
+    <div class="tools">
+      <button class="sec" id="btnTodos">Selecionar todos</button>
+      <button class="sec" id="btnNenhum">Limpar seleção</button>
+      <button class="sec" id="btnEssenciais">Campos essenciais</button>
+    </div>
+    <div id="camposLista"></div>
+  </div>
+
+  <!-- ETAPA 2: busca + KPIs + gráficos + preview + gerar PDF -->
+  <div id="etapaFinal" style="display:none;">
+
+    <!-- ---------- BARRA DE BUSCA ---------- -->
+    <div class="buscaBox" id="buscaBox">
+      <div class="buscaHeader">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <div class="titulo">Busca rápida</div>
+        <div class="contador" id="buscaContador">0 de 0</div>
+      </div>
+
+      <div class="buscaCampos" id="buscaCampos">
+        <!-- Preenchido dinamicamente com base nas colunas disponíveis -->
+      </div>
+
+      <div class="buscaAcoes">
+        <button class="sec" id="btnLimparBusca">Limpar busca</button>
+      </div>
+    </div>
+
+    <h2>2. Indicadores</h2>
+    <div class="kpis" id="kpis"></div>
+
+    <h2>3. Gráficos</h2>
+    <div class="graficos">
+      <div class="card"><h3>Inscritos por dia</h3><canvas id="chartDias"></canvas></div>
+      <div class="card"><h3>Credenciados vs Não credenciados</h3><canvas id="chartCred"></canvas></div>
+      <div class="card"><h3>Inscritos por categoria</h3><canvas id="chartCategoria"></canvas></div>
+      <div class="card"><h3>Status de pagamento</h3><canvas id="chartPagamento"></canvas></div>
+    </div>
+
+    <h2>4. Pré-visualização e geração</h2>
+    <div class="row">
+      <label style="font-size:13px;">Orientação:
+        <select id="orientacao">
+          <option value="landscape">Paisagem</option>
+          <option value="portrait">Retrato</option>
+        </select>
+      </label>
+      <label style="font-size:13px;">Filtrar por <em>Credenciado</em>:
+        <select id="filtroCredenciado">
+          <option value="">Todos</option>
+          <option value="Sim">Sim</option>
+          <option value="Não">Não</option>
+        </select>
+      </label>
+      <label style="font-size:13px;">
+        <input type="checkbox" id="incluirGraficos" checked /> Incluir gráficos no PDF
+      </label>
+      <button id="btnGerar">📄 Gerar PDF</button>
+    </div>
+
+    <div id="preview"></div>
+  </div>
+</div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+const APP_NAME    = 'CredenciaFácil Relatórios';
+const APP_VERSION = 'v1.1.0';
+const APP_SITE    = 'https://credenciafacil.app';
+
+let dadosCSV        = [];   // dados originais do CSV
+let dadosFiltrados  = [];   // após aplicar busca + filtro credenciado
+let colunasCSV      = [];
+let camposSel       = [];
+let termoBuscaPorCampo = {}; // { Nome Completo: 'bill', CPF: '123' }
+
+const charts = {};
+
+const fileInput    = document.getElementById('csvFile');
+const statusEl     = document.getElementById('status');
+const camposBox    = document.getElementById('camposBox');
+const camposLista  = document.getElementById('camposLista');
+const contadorEl   = document.getElementById('contadorCampos');
+const etapaFinal   = document.getElementById('etapaFinal');
+const previewEl    = document.getElementById('preview');
+const kpisEl       = document.getElementById('kpis');
+const buscaBox     = document.getElementById('buscaBox');
+const buscaCampos  = document.getElementById('buscaCampos');
+const buscaContEl  = document.getElementById('buscaContador');
+
+const ESSENCIAIS = ['ID','Nome Completo','Nome Crachá','Email','Celular',
+                    'Instituição','Cargo','Categoria','Credenciado','Status Pagamento'];
+
+// Campos prioritários que ganham destaque na busca
+const CAMPOS_BUSCA = ['Nome Completo', 'CPF', 'Email', 'Instituição',
+                      'Nome Crachá', 'Passaporte', 'Celular'];
+
+// ---------------------------------------------
+// 1) Leitura do CSV
+// ---------------------------------------------
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true,
+    complete: (result) => {
+      colunasCSV = (result.meta.fields || []).filter(Boolean);
+      dadosCSV   = result.data;
+
+      if (!colunasCSV.length) {
+        statusEl.textContent = '❌ Nenhuma coluna detectada no CSV.';
+        return;
+      }
+      statusEl.textContent =
+        `✔️ ${dadosCSV.length} registros e ${colunasCSV.length} colunas carregados.`;
+
+      camposBox.style.display = 'block';
+      etapaFinal.style.display = 'none';
+
+      // Reinicia a busca ao trocar de arquivo
+      termoBuscaPorCampo = {};
+
+      renderCamposLista();
+      selecionarEssenciais();
+    },
+    error: (err) => { statusEl.textContent = '❌ Erro ao ler CSV: ' + err.message; }
+  });
+});
+
+// ---------------------------------------------
+// 2) Lista de campos
+// ---------------------------------------------
+function renderCamposLista() {
+  camposLista.innerHTML = colunasCSV.map(col => `
+    <label>
+      <input type="checkbox" value="${escapeHtml(col)}" data-campo />
+      <span>${escapeHtml(col)}</span>
+    </label>
+  `).join('');
+  camposLista.querySelectorAll('input[data-campo]').forEach(chk =>
+    chk.addEventListener('change', atualizarSelecao));
+  atualizarSelecao();
+}
+
+function atualizarSelecao() {
+  camposSel = [...camposLista.querySelectorAll('input[data-campo]:checked')]
+    .map(c => c.value);
+  contadorEl.textContent = `${camposSel.length} selecionado${camposSel.length === 1 ? '' : 's'}`;
+
+  // 👇 Mostra a etapa final sempre que houver CSV carregado
+  if (!dadosCSV.length) {
+    etapaFinal.style.display = 'none';
+    return;
+  }
+  etapaFinal.style.display = 'block';
+
+  renderBusca();        // desenha a barra de busca
+  aplicarFiltros();     // KPIs/gráficos/preview (mesmo com 0 campos marcados)
+}
+
+// ---------------------------------------------
+// 3) Botões auxiliares
+// ---------------------------------------------
+document.getElementById('btnTodos').addEventListener('click', () => {
+  camposLista.querySelectorAll('input[data-campo]').forEach(c => c.checked = true);
+  atualizarSelecao();
+});
+document.getElementById('btnNenhum').addEventListener('click', () => {
+  camposLista.querySelectorAll('input[data-campo]').forEach(c => c.checked = false);
+  atualizarSelecao();
+});
+document.getElementById('btnEssenciais').addEventListener('click', selecionarEssenciais);
+function selecionarEssenciais() {
+  camposLista.querySelectorAll('input[data-campo]').forEach(c =>
+    c.checked = ESSENCIAIS.includes(c.value));
+  if (!camposLista.querySelector('input[data-campo]:checked')) {
+    [...camposLista.querySelectorAll('input[data-campo]')]
+      .slice(0, 6).forEach(c => c.checked = true);
+  }
+  atualizarSelecao();
+}
+
+// ---------------------------------------------
+// 4) Barra de busca
+// ---------------------------------------------
+function renderBusca() {
+  // Usa todos os campos de busca que existem no CSV, na ordem definida
+  const camposDisponiveis = CAMPOS_BUSCA.filter(c => colunasCSV.includes(c));
+
+  // Se nenhum dos prioritários existe, pega os 4 primeiros do CSV
+  const lista = camposDisponiveis.length
+    ? camposDisponiveis
+    : colunasCSV.slice(0, 4);
+
+  buscaCampos.innerHTML = lista.map(campo => `
+    <div class="campo">
+      <label for="busca_${slugify(campo)}">${escapeHtml(campo)}</label>
+      <input type="text"
+             id="busca_${slugify(campo)}"
+             data-busca-campo="${escapeHtml(campo)}"
+             placeholder="Digite para filtrar..."
+             value="${escapeHtml(termoBuscaPorCampo[campo] || '')}" />
+    </div>
+  `).join('');
+
+  buscaCampos.querySelectorAll('input[data-busca-campo]').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      termoBuscaPorCampo[e.target.dataset.buscaCampo] = e.target.value;
+      aplicarFiltros();
+    });
+  });
+}
+
+document.getElementById('btnLimparBusca').addEventListener('click', () => {
+  termoBuscaPorCampo = {};
+  buscaCampos.querySelectorAll('input[data-busca-campo]').forEach(i => i.value = '');
+  aplicarFiltros();
+});
+
+// ---------------------------------------------
+// 5) Aplicar filtros (busca + credenciado) e re-renderizar tudo
+// ---------------------------------------------
+function aplicarFiltros() {
+  const filtroCred = document.getElementById('filtroCredenciado').value;
+
+  dadosFiltrados = dadosCSV.filter(linha => {
+    // Filtro "Credenciado"
+    if (filtroCred && colunasCSV.includes('Credenciado')) {
+      if ((linha['Credenciado'] || '').trim() !== filtroCred) return false;
+    }
+    // Filtros por campo (todos precisam bater)
+    for (const [campo, termo] of Object.entries(termoBuscaPorCampo)) {
+      const t = (termo || '').trim();
+      if (!t) continue;
+      const valor = (linha[campo] ?? '').toString();
+      if (!valor.toLowerCase().includes(t.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  // Atualiza contador
+  buscaContEl.textContent = `${dadosFiltrados.length} de ${dadosCSV.length}`;
+
+  // Re-render
+  renderPreview();
+  renderKPIs();
+  renderGraficos();
+}
+
+// Deixa o filtro de credenciado reagir
+document.getElementById('filtroCredenciado').addEventListener('change', aplicarFiltros);
+
+// ---------------------------------------------
+// 6) Preview da tabela
+// ---------------------------------------------
+function renderPreview() {
+  if (!camposSel.length) {
+    previewEl.innerHTML = `<div class="buscaVazia">Selecione ao menos um campo acima para ver a tabela.</div>`;
+    return;
+  }
+  if (!dadosFiltrados.length) {
+    previewEl.innerHTML = `<div class="buscaVazia">Nenhum registro encontrado com os filtros atuais.</div>`;
+    return;
+  }
+
+  const colunas = colunasCSV.filter(c => camposSel.includes(c));
+  const limite = 15;
+
+  previewEl.innerHTML = `
+    <table>
+      <thead><tr>${colunas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${dadosFiltrados.slice(0, limite).map(linha => `
+          <tr>${colunas.map(c => {
+            const bruto = (linha[c] ?? '').toString();
+            return `<td>${destacar(bruto, c)}</td>`;
+          }).join('')}</tr>
+        `).join('')}
+      </tbody>
+    </table>
+    ${dadosFiltrados.length > limite
+      ? `<div class="status">Mostrando ${limite} de ${dadosFiltrados.length} registros filtrados.</div>` : ''}
+  `;
+}
+
+// Realça o termo buscado quando há filtro ativo nesse campo
+function destacar(texto, campo) {
+  const termo = (termoBuscaPorCampo[campo] || '').trim();
+  const esc = escapeHtml(texto);
+  if (!termo) return esc;
+  const re = new RegExp('(' + escapeRegex(escapeHtml(termo)) + ')', 'ig');
+  return esc.replace(re, '<mark>$1</mark>');
+}
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ---------------------------------------------
+// 7) KPIs (usam dadosFiltrados)
+// ---------------------------------------------
+function renderKPIs() {
+  const total = dadosFiltrados.length;
+  const norm = v => (v ?? '').toString().trim().toLowerCase();
+
+  const contar = (coluna, valoresAlvo) => {
+    if (!colunasCSV.includes(coluna)) return 0;
+    return dadosFiltrados.filter(l => valoresAlvo.includes(norm(l[coluna]))).length;
+  };
+
+  const credenciados    = contar('Credenciado', ['sim']);
+  const naoCredenciados = contar('Credenciado', ['não','nao']);
+  const pagos           = contar('Status Pagamento', ['pago','paid','free','confirmado']);
+  const bloqueados      = contar('Bloqueado', ['sim']);
+
+  kpisEl.innerHTML = `
+    <div class="kpi"><div class="label">Total de inscritos</div><div class="value">${total}</div></div>
+    <div class="kpi green"><div class="label">Credenciados</div><div class="value">${credenciados}</div></div>
+    <div class="kpi amber"><div class="label">Não credenciados</div><div class="value">${naoCredenciados}</div></div>
+    <div class="kpi"><div class="label">Pagamento OK</div><div class="value">${pagos}</div></div>
+    <div class="kpi rose"><div class="label">Bloqueados</div><div class="value">${bloqueados}</div></div>
+  `;
+}
+
+// ---------------------------------------------
+// 8) Gráficos (usam dadosFiltrados)
+// ---------------------------------------------
+function destruirChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+function renderGraficos() {
+  renderGraficoDias();
+  renderGraficoCredenciados();
+  renderGraficoCategoria();
+  renderGraficoPagamento();
+}
+
+function renderGraficoDias() {
+  destruirChart('dias');
+  let labels = [], valores = [], titulo = '';
+
+  if (colunasCSV.includes('Data Cadastro')) {
+    const contagem = {};
+    dadosFiltrados.forEach(l => {
+      const bruto = (l['Data Cadastro'] || '').trim();
+      if (!bruto) return;
+      const dia = normalizarData(bruto);
+      if (!dia) return;
+      contagem[dia] = (contagem[dia] || 0) + 1;
+    });
+    const chaves = Object.keys(contagem).sort();
+    labels  = chaves.map(d => d.split('-').reverse().slice(0,2).join('/'));
+    valores = chaves.map(k => contagem[k]);
+    titulo  = 'por dia de cadastro';
+  } else if (colunasCSV.includes('Dias Inscritos')) {
+    const contagem = {};
+    dadosFiltrados.forEach(l => {
+      const v = (l['Dias Inscritos'] || '').trim() || '—';
+      contagem[v] = (contagem[v] || 0) + 1;
+    });
+    labels  = Object.keys(contagem);
+    valores = Object.values(contagem);
+    titulo  = 'por Dias Inscritos';
+  }
+
+  const ctx = document.getElementById('chartDias').getContext('2d');
+  charts.dias = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: `Inscritos ${titulo}`,
+        data: valores,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,.15)',
+        fill: true, tension: .35, pointRadius: 3
+      }]
+    },
+    options: opcoesPadrao()
+  });
+}
+
+function renderGraficoCredenciados() {
+  destruirChart('cred');
+  if (!colunasCSV.includes('Credenciado')) return;
+
+  const norm = v => (v ?? '').toString().trim().toLowerCase();
+  let sim = 0, nao = 0, outros = 0;
+  dadosFiltrados.forEach(l => {
+    const v = norm(l['Credenciado']);
+    if (v === 'sim') sim++;
+    else if (v === 'não' || v === 'nao') nao++;
+    else outros++;
+  });
+
+  const labels = ['Credenciados','Não credenciados'];
+  const data   = [sim, nao];
+  if (outros) { labels.push('Sem informação'); data.push(outros); }
+
+  const ctx = document.getElementById('chartCred').getContext('2d');
+  charts.cred = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: ['#10b981','#ef4444','#9ca3af'],
+        borderWidth: 0
+      }]
+    },
+    options: opcoesPadrao({ doughnut: true })
+  });
+}
+
+function renderGraficoCategoria() {
+  destruirChart('categoria');
+  if (!colunasCSV.includes('Categoria')) return;
+
+  const contagem = {};
+  dadosFiltrados.forEach(l => {
+    const v = (l['Categoria'] || '').trim() || '—';
+    contagem[v] = (contagem[v] || 0) + 1;
+  });
+  const ordenado = Object.entries(contagem).sort((a,b) => b[1]-a[1]);
+  const labels  = ordenado.map(([k]) => k);
+  const valores = ordenado.map(([,v]) => v);
+
+  const ctx = document.getElementById('chartCategoria').getContext('2d');
+  charts.categoria = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Inscritos',
+        data: valores,
+        backgroundColor: '#6366f1',
+        borderRadius: 6
+      }]
+    },
+    options: opcoesPadrao({ indexAxis: 'x' })
+  });
+}
+
+function renderGraficoPagamento() {
+  destruirChart('pagamento');
+  if (!colunasCSV.includes('Status Pagamento')) return;
+
+  const contagem = {};
+  dadosFiltrados.forEach(l => {
+    const v = (l['Status Pagamento'] || '').trim() || '—';
+    contagem[v] = (contagem[v] || 0) + 1;
+  });
+  const labels  = Object.keys(contagem);
+  const valores = Object.values(contagem);
+
+  const ctx = document.getElementById('chartPagamento').getContext('2d');
+  charts.pagamento = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{
+        data: valores,
+        backgroundColor: ['#22c55e','#f59e0b','#ef4444','#3b82f6','#a855f7','#9ca3af']
+      }]
+    },
+    options: opcoesPadrao({ doughnut: true })
+  });
+}
+
+function opcoesPadrao(extra = {}) {
+  const base = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: {
+      legend: {
+        position: extra.doughnut ? 'right' : 'top',
+        labels: { boxWidth: 12, font: { size: 11 } }
+      },
+      tooltip: { enabled: true }
+    },
+    scales: (extra.doughnut || extra.pie)
+      ? {}
+      : {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+        }
+  };
+  if (extra.indexAxis) base.indexAxis = extra.indexAxis;
+  return base;
+}
+
+function normalizarData(bruto) {
+  bruto = bruto.trim();
+  let m = bruto.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  m = bruto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  return null;
+}
+
+// ---------------------------------------------
+// 9) Geração do PDF
+// ---------------------------------------------
+document.getElementById('btnGerar').addEventListener('click', gerarPDF);
+
+function desenharCabecalhoMarca(doc, subtitulo = '') {
+  const pageW = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 0, pageW, 70, 'F');
+
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(40, 18, 34, 34, 6, 6, 'F');
+  doc.setTextColor(37, 99, 235);
+  doc.setFontSize(16);
+  doc.setFont(undefined, 'bold');
+  doc.text('CF', 47, 41);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(15);
+  doc.setFont(undefined, 'bold');
+  doc.text(APP_NAME, 86, 34);
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  doc.text(subtitulo || 'Relatório de Participantes', 86, 49);
+
+  doc.setFontSize(8);
+  doc.text(APP_VERSION, pageW - 40, 34, { align: 'right' });
+
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(20);
+}
+
+function desenharRodape(doc) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const pageCount = doc.internal.getNumberOfPages();
+  const pageNum = doc.internal.getCurrentPageInfo().pageNumber;
+
+  doc.setDrawColor(220);
+  doc.line(30, pageH - 32, pageW - 30, pageH - 32);
+
+  doc.setFontSize(8);
+  doc.setTextColor(140);
+  doc.text(`${APP_NAME} ${APP_VERSION}`, 30, pageH - 18);
+  doc.text(APP_SITE, pageW / 2, pageH - 18, { align: 'center' });
+  doc.text(`Página ${pageNum} de ${pageCount}`, pageW - 30, pageH - 18, { align: 'right' });
+}
+
+// Monta um texto legível dos filtros ativos para colocar no PDF
+function descreverFiltrosAtivos() {
+  const partes = [];
+  const cred = document.getElementById('filtroCredenciado').value;
+  if (cred) partes.push(`Credenciado = ${cred}`);
+  Object.entries(termoBuscaPorCampo).forEach(([campo, termo]) => {
+    const t = (termo || '').trim();
+    if (t) partes.push(`${campo} contém "${t}"`);
+  });
+  return partes;
+}
+
+function gerarPDF() {
+  if (!camposSel.length || !dadosFiltrados.length) {
+    if (!dadosFiltrados.length) alert('Nenhum registro para exportar com os filtros atuais.');
+    return;
+  }
+
+  const orientacao      = document.getElementById('orientacao').value;
+  const incluirGraficos = document.getElementById('incluirGraficos').checked;
+
+  const colunasPDF = colunasCSV.filter(c => camposSel.includes(c));
+  const linhas     = dadosFiltrados;
+  const filtrosAtivos = descreverFiltrosAtivos();
+
+  const doc = new jsPDF({ orientation: orientacao, unit: 'pt', format: 'a4' });
+
+  // ---------- PÁGINA 1: RESUMO ----------
+  desenharCabecalhoMarca(doc, 'Relatório de Participantes');
+
+  let y = 110;
+  doc.setFontSize(12);
+  doc.setTextColor(20);
+  doc.setFont(undefined, 'bold');
+  doc.text('Resumo', 40, y);
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(90);
+  y += 22;
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 40, y);
+  y += 16;
+  doc.text(`Registros no relatório: ${linhas.length} de ${dadosCSV.length}`, 40, y);
+
+  if (filtrosAtivos.length) {
+    y += 22;
+    doc.setFontSize(10);
+    doc.setTextColor(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('Filtros aplicados:', 40, y);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(90);
+    filtrosAtivos.forEach(f => {
+      y += 15;
+      doc.text('• ' + f, 50, y);
+    });
+  }
+
+  desenharRodape(doc);
+
+  // ---------- PÁGINA 2: GRÁFICOS ----------
+  if (incluirGraficos) {
+    doc.addPage();
+    desenharCabecalhoMarca(doc, 'Indicadores e Gráficos');
+
+    const pageW  = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    const chartW = (pageW - margin * 3) / 2;
+    const chartH = chartW * 0.62;
+
+    const imgs = [
+      { id: 'chartDias',      titulo: 'Inscritos por dia' },
+      { id: 'chartCred',      titulo: 'Credenciados vs Não credenciados' },
+      { id: 'chartCategoria', titulo: 'Inscritos por categoria' },
+      { id: 'chartPagamento', titulo: 'Status de pagamento' }
+    ];
+
+    let x = margin, yG = 100;
+    imgs.forEach((cfg, i) => {
+      const canvas = document.getElementById(cfg.id);
+      if (!canvas) return;
+
+      const tmp = document.createElement('canvas');
+      tmp.width = canvas.width; tmp.height = canvas.height;
+      const tctx = tmp.getContext('2d');
+      tctx.fillStyle = '#fff';
+      tctx.fillRect(0, 0, tmp.width, tmp.height);
+      tctx.drawImage(canvas, 0, 0);
+      const dataURL = tmp.toDataURL('image/png', 1.0);
+
+      doc.setFontSize(10);
+      doc.setTextColor(60);
+      doc.text(cfg.titulo, x, yG - 6);
+
+      doc.addImage(dataURL, 'PNG', x, yG, chartW, chartH, undefined, 'FAST');
+
+      if (i % 2 === 0) {
+        x += chartW + margin;
+      } else {
+        x = margin;
+        yG += chartH + 40;
+      }
+    });
+
+    desenharRodape(doc);
+  }
+
+  // ---------- PÁGINA 3+: TABELA ----------
+  doc.addPage();
+  desenharCabecalhoMarca(doc, 'Detalhamento');
+
+  doc.autoTable({
+    startY: 90,
+    head: [colunasPDF],
+    body: linhas.map(l => colunasPDF.map(c => l[c] ?? '')),
+    styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', valign: 'middle' },
+    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    margin: { left: 30, right: 30, top: 90, bottom: 50 },
+    didDrawPage: () => {
+      desenharCabecalhoMarca(doc, 'Detalhamento');
+      desenharRodape(doc);
+    }
+  });
+
+  const dataArquivo = new Date().toISOString().slice(0, 10);
+  doc.save(`CredenciaFacil_Relatorio_${dataArquivo}.pdf`);
+}
+
+// ---------------------------------------------
+// Util
+// ---------------------------------------------
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
+}
+function slugify(str) {
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Gerador de Relatório PDF com Gráficos</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #f3f4f6; margin: 0; padding: 24px; color: #111827;
+  }
+  .container {
+    max-width: 1200px; margin: 0 auto; background: #fff;
+    padding: 24px; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  }
+  h1 { font-size: 22px; margin-top: 0; }
+  h2 { font-size: 15px; margin: 20px 0 8px; color: #374151; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  input[type="file"], select {
+    padding: 8px 12px; border: 1px solid #d1d5db;
+    border-radius: 8px; background: #fff; font-size: 14px;
+  }
+  button {
+    padding: 10px 18px; border: none; border-radius: 8px;
+    background: #2563eb; color: #fff; font-weight: 600;
+    cursor: pointer; font-size: 14px;
+  }
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  button.sec { background: #e5e7eb; color: #111827; }
+  button.sec:hover { background: #d1d5db; }
+
+  #camposBox {
+    display: none; border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 14px; background: #fafafa; margin-bottom: 16px;
+  }
+  #camposBox .tools { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  #camposLista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px 14px; max-height: 260px; overflow-y: auto; padding: 6px 2px;
+  }
+  #camposLista label {
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+    cursor: pointer; padding: 4px 6px; border-radius: 6px;
+  }
+  #camposLista label:hover { background: #eef2ff; }
+  #camposLista input[type="checkbox"] { accent-color: #2563eb; }
+
+  /* KPIs */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin: 12px 0 20px;
+  }
+  .kpi {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi .label { font-size: 12px; color: #1e40af; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .value { font-size: 26px; font-weight: 700; color: #1e3a8a; margin-top: 4px; }
+  .kpi.green { background: linear-gradient(135deg,#ecfdf5,#d1fae5); border-color:#a7f3d0; }
+  .kpi.green .label { color:#065f46; } .kpi.green .value { color:#064e3b; }
+  .kpi.amber { background: linear-gradient(135deg,#fffbeb,#fef3c7); border-color:#fde68a; }
+  .kpi.amber .label { color:#92400e; } .kpi.amber .value { color:#78350f; }
+  .kpi.rose { background: linear-gradient(135deg,#fef2f2,#fee2e2); border-color:#fecaca; }
+  .kpi.rose .label { color:#991b1b; } .kpi.rose .value { color:#7f1d1d; }
+
+  /* Grid de gráficos */
+  .graficos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px; margin-bottom: 20px;
+  }
+  .card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.03);
+  }
+  .card h3 {
+    margin: 0 0 8px; font-size: 13px; color: #374151;
+    font-weight: 600; letter-spacing: .02em;
+  }
+  .card canvas { width: 100% !important; height: 220px !important; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+  th, td { padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+  th { background: #f9fafb; }
+  .status { font-size: 13px; color: #374151; }
+  .tag {
+    display: inline-block; background: #dbeafe; color: #1e40af;
+    font-size: 12px; padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 Gerador de Relatório PDF com Gráficos</h1>
+
+  <div class="row">
+    <input type="file" id="csvFile" accept=".csv,text/csv" />
+    <div class="status" id="status">Selecione um arquivo CSV para começar.</div>
+  </div>
+
+  <!-- ETAPA 1: seleção de campos -->
+  <div id="camposBox">
+    <h2>1. Escolha os campos que deseja usar <span class="tag" id="contadorCampos">0 selecionados</span></h2>
+    <div class="tools">
+      <button class="sec" id="btnTodos">Selecionar todos</button>
+      <button class="sec" id="btnNenhum">Limpar seleção</button>
+      <button class="sec" id="btnEssenciais">Campos essenciais</button>
+    </div>
+    <div id="camposLista"></div>
+  </div>
+
+  <!-- ETAPA 2: KPIs + gráficos + preview + gerar PDF -->
+  <div id="etapaFinal" style="display:none;">
+
+    <h2>2. Indicadores</h2>
+    <div class="kpis" id="kpis"></div>
+
+    <h2>3. Gráficos</h2>
+    <div class="graficos">
+      <div class="card"><h3>Inscritos por dia</h3><canvas id="chartDias"></canvas></div>
+      <div class="card"><h3>Credenciados vs Não credenciados</h3><canvas id="chartCred"></canvas></div>
+      <div class="card"><h3>Inscritos por categoria</h3><canvas id="chartCategoria"></canvas></div>
+      <div class="card"><h3>Status de pagamento</h3><canvas id="chartPagamento"></canvas></div>
+    </div>
+
+    <h2>4. Pré-visualização e geração</h2>
+    <div class="row">
+      <label style="font-size:13px;">Orientação:
+        <select id="orientacao">
+          <option value="landscape">Paisagem</option>
+          <option value="portrait">Retrato</option>
+        </select>
+      </label>
+      <label style="font-size:13px;">Filtrar por <em>Credenciado</em>:
+        <select id="filtroCredenciado">
+          <option value="">Todos</option>
+          <option value="Sim">Sim</option>
+          <option value="Não">Não</option>
+        </select>
+      </label>
+      <label style="font-size:13px;">
+        <input type="checkbox" id="incluirGraficos" checked /> Incluir gráficos no PDF
+      </label>
+      <button id="btnGerar">📄 Gerar PDF</button>
+    </div>
+
+    <div id="preview"></div>
+  </div>
+</div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+let dadosCSV   = [];
+let colunasCSV = [];
+let camposSel  = [];
+
+// Guarda as instâncias dos gráficos para poder recriá-los/destruí-los
+const charts = {};
+
+const fileInput   = document.getElementById('csvFile');
+const statusEl    = document.getElementById('status');
+const camposBox   = document.getElementById('camposBox');
+const camposLista = document.getElementById('camposLista');
+const contadorEl  = document.getElementById('contadorCampos');
+const etapaFinal  = document.getElementById('etapaFinal');
+const previewEl   = document.getElementById('preview');
+const kpisEl      = document.getElementById('kpis');
+
+const ESSENCIAIS = ['ID','Nome Completo','Nome Crachá','Email','Celular',
+                    'Instituição','Cargo','Categoria','Credenciado','Status Pagamento'];
+
+// ---------------------------------------------
+// 1) Leitura do CSV
+// ---------------------------------------------
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true,
+    complete: (result) => {
+      colunasCSV = (result.meta.fields || []).filter(Boolean);
+      dadosCSV   = result.data;
+
+      if (!colunasCSV.length) {
+        statusEl.textContent = '❌ Nenhuma coluna detectada no CSV.';
+        return;
+      }
+      statusEl.textContent =
+        `✔️ ${dadosCSV.length} registros e ${colunasCSV.length} colunas carregados.`;
+
+      camposBox.style.display = 'block';
+      etapaFinal.style.display = 'none';
+      renderCamposLista();
+      selecionarEssenciais();
+    },
+    error: (err) => { statusEl.textContent = '❌ Erro ao ler CSV: ' + err.message; }
+  });
+});
+
+// ---------------------------------------------
+// 2) Lista de campos
+// ---------------------------------------------
+function renderCamposLista() {
+  camposLista.innerHTML = colunasCSV.map(col => `
+    <label>
+      <input type="checkbox" value="${escapeHtml(col)}" data-campo />
+      <span>${escapeHtml(col)}</span>
+    </label>
+  `).join('');
+  camposLista.querySelectorAll('input[data-campo]').forEach(chk =>
+    chk.addEventListener('change', atualizarSelecao));
+  atualizarSelecao();
+}
+
+function atualizarSelecao() {
+  camposSel = [...camposLista.querySelectorAll('input[data-campo]:checked')]
+    .map(c => c.value);
+  contadorEl.textContent = `${camposSel.length} selecionado${camposSel.length === 1 ? '' : 's'}`;
+
+  if (!camposSel.length) {
+    etapaFinal.style.display = 'none';
+    return;
+  }
+  etapaFinal.style.display = 'block';
+  renderPreview();
+  renderKPIs();
+  renderGraficos();
+}
+
+// ---------------------------------------------
+// 3) Botões auxiliares
+// ---------------------------------------------
+document.getElementById('btnTodos').addEventListener('click', () => {
+  camposLista.querySelectorAll('input[data-campo]').forEach(c => c.checked = true);
+  atualizarSelecao();
+});
+document.getElementById('btnNenhum').addEventListener('click', () => {
+  camposLista.querySelectorAll('input[data-campo]').forEach(c => c.checked = false);
+  atualizarSelecao();
+});
+document.getElementById('btnEssenciais').addEventListener('click', selecionarEssenciais);
+function selecionarEssenciais() {
+  camposLista.querySelectorAll('input[data-campo]').forEach(c =>
+    c.checked = ESSENCIAIS.includes(c.value));
+  if (!camposLista.querySelector('input[data-campo]:checked')) {
+    [...camposLista.querySelectorAll('input[data-campo]')]
+      .slice(0, 6).forEach(c => c.checked = true);
+  }
+  atualizarSelecao();
+}
+
+// ---------------------------------------------
+// 4) Preview da tabela
+// ---------------------------------------------
+function renderPreview() {
+  if (!camposSel.length || !dadosCSV.length) { previewEl.innerHTML = ''; return; }
+  const colunas = colunasCSV.filter(c => camposSel.includes(c));
+  const limite = 15;
+
+  previewEl.innerHTML = `
+    <table>
+      <thead><tr>${colunas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${dadosCSV.slice(0, limite).map(linha => `
+          <tr>${colunas.map(c => `<td>${escapeHtml(linha[c] ?? '')}</td>`).join('')}</tr>
+        `).join('')}
+      </tbody>
+    </table>
+    ${dadosCSV.length > limite
+      ? `<div class="status">Mostrando ${limite} de ${dadosCSV.length} registros.</div>` : ''}
+  `;
+}
+
+// ---------------------------------------------
+// 5) KPIs
+// ---------------------------------------------
+function renderKPIs() {
+  const total = dadosCSV.length;
+
+  const norm = v => (v ?? '').toString().trim().toLowerCase();
+  const contar = (coluna, valoresAlvo) => {
+    if (!colunasCSV.includes(coluna)) return 0;
+    return dadosCSV.filter(l => valoresAlvo.includes(norm(l[coluna]))).length;
+  };
+
+  const credenciados   = contar('Credenciado', ['sim']);
+  const naoCredenciados= contar('Credenciado', ['não','nao']);
+  const pagos          = contar('Status Pagamento', ['pago','paid','free','confirmado']);
+  const bloqueados     = contar('Bloqueado', ['sim']);
+
+  kpisEl.innerHTML = `
+    <div class="kpi"><div class="label">Total de inscritos</div><div class="value">${total}</div></div>
+    <div class="kpi green"><div class="label">Credenciados</div><div class="value">${credenciados}</div></div>
+    <div class="kpi amber"><div class="label">Não credenciados</div><div class="value">${naoCredenciados}</div></div>
+    <div class="kpi"><div class="label">Pagamento OK</div><div class="value">${pagos}</div></div>
+    <div class="kpi rose"><div class="label">Bloqueados</div><div class="value">${bloqueados}</div></div>
+  `;
+}
+
+// ---------------------------------------------
+// 6) Gráficos (Chart.js)
+// ---------------------------------------------
+function destruirChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function renderGraficos() {
+  renderGraficoDias();
+  renderGraficoCredenciados();
+  renderGraficoCategoria();
+  renderGraficoPagamento();
+}
+
+// --- a) Inscritos por dia ---
+function renderGraficoDias() {
+  destruirChart('dias');
+
+  // Estratégia: se houver "Data Cadastro" (dd/mm/yyyy ou ISO), agrupa por dia.
+  // Senão usa "Dias Inscritos" como categoria.
+  let labels = [], valores = [];
+  let titulo = '';
+
+  if (colunasCSV.includes('Data Cadastro')) {
+    const contagem = {};
+    dadosCSV.forEach(l => {
+      const bruto = (l['Data Cadastro'] || '').trim();
+      if (!bruto) return;
+      const dia = normalizarData(bruto);
+      if (!dia) return;
+      contagem[dia] = (contagem[dia] || 0) + 1;
+    });
+    const chaves = Object.keys(contagem).sort();
+    labels  = chaves.map(d => d.split('-').reverse().slice(0,2).join('/')); // dd/mm
+    valores = chaves.map(k => contagem[k]);
+    titulo  = 'por dia de cadastro';
+  } else if (colunasCSV.includes('Dias Inscritos')) {
+    const contagem = {};
+    dadosCSV.forEach(l => {
+      const v = (l['Dias Inscritos'] || '').trim() || '—';
+      contagem[v] = (contagem[v] || 0) + 1;
+    });
+    labels  = Object.keys(contagem);
+    valores = Object.values(contagem);
+    titulo  = 'por Dias Inscritos';
+  }
+
+  const ctx = document.getElementById('chartDias').getContext('2d');
+  charts.dias = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: `Inscritos ${titulo}`,
+        data: valores,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,.15)',
+        fill: true, tension: .35, pointRadius: 3
+      }]
+    },
+    options: opcoesPadrao()
+  });
+}
+
+// --- b) Credenciados vs Não credenciados ---
+function renderGraficoCredenciados() {
+  destruirChart('cred');
+  if (!colunasCSV.includes('Credenciado')) return;
+
+  const norm = v => (v ?? '').toString().trim().toLowerCase();
+  let sim = 0, nao = 0, outros = 0;
+  dadosCSV.forEach(l => {
+    const v = norm(l['Credenciado']);
+    if (v === 'sim') sim++;
+    else if (v === 'não' || v === 'nao') nao++;
+    else outros++;
+  });
+
+  const labels = ['Credenciados','Não credenciados'];
+  const data   = [sim, nao];
+  if (outros) { labels.push('Sem informação'); data.push(outros); }
+
+  const ctx = document.getElementById('chartCred').getContext('2d');
+  charts.cred = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels, data,
+      datasets: [{
+        data,
+        backgroundColor: ['#10b981','#ef4444','#9ca3af'],
+        borderWidth: 0
+      }]
+    },
+    options: opcoesPadrao({ doughnut: true })
+  });
+}
+
+// --- c) Inscritos por categoria ---
+function renderGraficoCategoria() {
+  destruirChart('categoria');
+  if (!colunasCSV.includes('Categoria')) return;
+
+  const contagem = {};
+  dadosCSV.forEach(l => {
+    const v = (l['Categoria'] || '').trim() || '—';
+    contagem[v] = (contagem[v] || 0) + 1;
+  });
+
+  const ordenado = Object.entries(contagem).sort((a,b) => b[1]-a[1]);
+  const labels = ordenado.map(([k]) => k);
+  const valores = ordenado.map(([,v]) => v);
+
+  const ctx = document.getElementById('chartCategoria').getContext('2d');
+  charts.categoria = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Inscritos',
+        data: valores,
+        backgroundColor: '#6366f1',
+        borderRadius: 6
+      }]
+    },
+    options: opcoesPadrao({ indexAxis: 'x' })
+  });
+}
+
+// --- d) Status de pagamento ---
+function renderGraficoPagamento() {
+  destruirChart('pagamento');
+  if (!colunasCSV.includes('Status Pagamento')) return;
+
+  const contagem = {};
+  dadosCSV.forEach(l => {
+    const v = (l['Status Pagamento'] || '').trim() || '—';
+    contagem[v] = (contagem[v] || 0) + 1;
+  });
+
+  const labels = Object.keys(contagem);
+  const valores = Object.values(contagem);
+
+  const ctx = document.getElementById('chartPagamento').getContext('2d');
+  charts.pagamento = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{
+        data: valores,
+        backgroundColor: ['#22c55e','#f59e0b','#ef4444','#3b82f6','#a855f7','#9ca3af']
+      }]
+    },
+    options: opcoesPadrao({ doughnut: true })
+  });
+}
+
+// Opções padrão para todos os gráficos
+function opcoesPadrao(extra = {}) {
+  const base = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,           // importante: garante que o canvas esteja pronto p/ o PDF
+    plugins: {
+      legend: {
+        position: extra.doughnut ? 'right' : 'top',
+        labels: { boxWidth: 12, font: { size: 11 } }
+      },
+      tooltip: { enabled: true }
+    },
+    scales: (extra.doughnut || extra.pie)
+      ? {}
+      : {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+        }
+  };
+  if (extra.indexAxis) base.indexAxis = extra.indexAxis;
+  return base;
+}
+
+// Normaliza datas: aceita "dd/mm/yyyy, hh:mm:ss", "dd/mm/yyyy", "yyyy-mm-dd"
+function normalizarData(bruto) {
+  bruto = bruto.trim();
+  // dd/mm/yyyy[, hh:mm:ss]
+  let m = bruto.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  // yyyy-mm-dd
+  m = bruto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  return null;
+}
+
+// ---------------------------------------------
+// 7) Geração do PDF (tabela + gráficos)
+// ---------------------------------------------
+document.getElementById('btnGerar').addEventListener('click', gerarPDF);
+
+function gerarPDF() {
+  if (!camposSel.length || !dadosCSV.length) return;
+
+  const orientacao    = document.getElementById('orientacao').value;
+  const filtro        = document.getElementById('filtroCredenciado').value;
+  const incluirGraficos = document.getElementById('incluirGraficos').checked;
+
+  const colunasPDF = colunasCSV.filter(c => camposSel.includes(c));
+
+  let linhas = dadosCSV;
+  if (filtro && colunasCSV.includes('Credenciado')) {
+    linhas = linhas.filter(l => (l['Credenciado'] || '').trim() === filtro);
+  }
+  if (!linhas.length) { alert('Nenhum registro atende ao filtro.'); return; }
+
+  const doc = new jsPDF({ orientation: orientacao, unit: 'pt', format: 'a4' });
+
+  // ---------- CAPA / RESUMO ----------
+  doc.setFontSize(18);
+  doc.setTextColor(20);
+  doc.text('Relatório de Participantes', 40, 50);
+
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 40, 68);
+  doc.text(`Registros no relatório: ${linhas.length}`, 40, 82);
+  if (filtro) doc.text(`Filtro "Credenciado" = ${filtro}`, 40, 96);
+
+  // ---------- GRÁFICOS ----------
+  if (incluirGraficos) {
+    // Página 2 dedicada aos gráficos
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setTextColor(20);
+    doc.text('Indicadores e Gráficos', 40, 45);
+
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    const chartW = (pageW - margin*3) / 2;   // 2 colunas
+    const chartH = chartW * 0.62;
+
+    const imgs = [
+      { id: 'chartDias',      titulo: 'Inscritos por dia' },
+      { id: 'chartCred',      titulo: 'Credenciados vs Não credenciados' },
+      { id: 'chartCategoria', titulo: 'Inscritos por categoria' },
+      { id: 'chartPagamento', titulo: 'Status de pagamento' }
+    ];
+
+    let x = margin, y = 70;
+    imgs.forEach((cfg, i) => {
+      const canvas = document.getElementById(cfg.id);
+      if (!canvas) return;
+
+      // Fundo branco no canvas (importante para não sair transparente/preto no PDF)
+      const tmp = document.createElement('canvas');
+      tmp.width = canvas.width; tmp.height = canvas.height;
+      const tctx = tmp.getContext('2d');
+      tctx.fillStyle = '#fff';
+      tctx.fillRect(0, 0, tmp.width, tmp.height);
+      tctx.drawImage(canvas, 0, 0);
+
+      const dataURL = tmp.toDataURL('image/png', 1.0);
+
+      // Título do card
+      doc.setFontSize(10);
+      doc.setTextColor(60);
+      doc.text(cfg.titulo, x, y - 6);
+
+      doc.addImage(dataURL, 'PNG', x, y, chartW, chartH, undefined, 'FAST');
+
+      // Layout 2x2
+      if (i % 2 === 0) {
+        x += chartW + margin;
+      } else {
+        x = margin;
+        y += chartH + 40;
+      }
+    });
+  }
+
+  // ---------- TABELA ----------
+  doc.addPage();
+  doc.setFontSize(14);
+  doc.setTextColor(20);
+  doc.text('Detalhamento', 40, 45);
+
+  doc.autoTable({
+    startY: 65,
+    head: [colunasPDF],
+    body: linhas.map(l => colunasPDF.map(c => l[c] ?? '')),
+    styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', valign: 'middle' },
+    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    margin: { left: 30, right: 30 },
+    didDrawPage: () => {
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(
+        `Página ${doc.internal.getCurrentPageInfo().pageNumber} de ${pageCount}`,
+        doc.internal.pageSize.getWidth() - 80,
+        doc.internal.pageSize.getHeight() - 20
+      );
+    }
+  });
+
+  doc.save(`relatorio_${Date.now()}.pdf`);
+}
+
+// ---------------------------------------------
+// Util
+// ---------------------------------------------
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
+}
+</script>
+</body>
+</html>
