@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>CredenciaFácil Relatórios</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -10,7 +11,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <style>
-  /* ---------- Paleta CredenciaFácil ---------- */
   :root {
     --cf-primary:   #2563eb;
     --cf-primary-2: #7c3aed;
@@ -35,7 +35,6 @@
     box-shadow: 0 4px 16px rgba(0,0,0,.08);
   }
 
-  /* ---------- Marca ---------- */
   .brand {
     display: flex; align-items: center; gap: 14px;
     margin-bottom: 20px; padding-bottom: 16px;
@@ -45,14 +44,10 @@
     width: 46px; height: 46px; border-radius: 12px;
     background: linear-gradient(135deg, var(--cf-primary), var(--cf-primary-2));
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 10px rgba(37,99,235,.35);
-    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(37,99,235,.35); flex-shrink: 0;
   }
   .brand .logo svg { width: 28px; height: 28px; display: block; }
-  .brand .nome {
-    font-size: 20px; font-weight: 800; color: var(--cf-text);
-    line-height: 1.1;
-  }
+  .brand .nome { font-size: 20px; font-weight: 800; line-height: 1.1; }
   .brand .nome span { color: var(--cf-primary); }
   .brand .sub {
     font-size: 11px; color: var(--cf-muted); margin-top: 3px;
@@ -60,18 +55,21 @@
   }
   .brand .versao {
     margin-left: auto; font-size: 11px; color: var(--cf-muted);
-    background: var(--cf-bg); padding: 4px 10px; border-radius: 999px;
-    font-weight: 600;
+    background: var(--cf-bg); padding: 4px 10px; border-radius: 999px; font-weight: 600;
   }
 
-  h2 { font-size: 15px; margin: 20px 0 8px; color: #374151; }
+  h2 { font-size: 15px; margin: 24px 0 8px; color: #374151; }
+  h3.subtitulo { font-size: 13px; margin: 16px 0 4px; color: #374151; }
 
   .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
-  input[type="file"], select, input[type="text"] {
+  input[type="file"], select, input[type="text"], input[type="date"] {
     padding: 8px 12px; border: 1px solid #d1d5db;
-    border-radius: 8px; background: #fff; font-size: 14px;
-    font-family: inherit;
+    border-radius: 8px; background: #fff; font-size: 14px; font-family: inherit;
   }
+  #nomeEvento { min-width: 280px; flex: 1; }
+  label.inline { font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  label.inline.desabilitado { opacity: .45; }
+
   button {
     padding: 10px 18px; border: none; border-radius: 8px;
     background: var(--cf-primary); color: #fff; font-weight: 600;
@@ -88,8 +86,7 @@
   }
   #camposBox .tools { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
   #camposLista {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 6px 14px; max-height: 260px; overflow-y: auto; padding: 6px 2px;
   }
   #camposLista label {
@@ -99,115 +96,130 @@
   #camposLista label:hover { background: #eef2ff; }
   #camposLista input[type="checkbox"] { accent-color: var(--cf-primary); }
 
-  /* ---------- Barra de busca ---------- */
   .buscaBox {
-    display: none;
     background: linear-gradient(135deg, #eff6ff, #f5f3ff);
     border: 1px solid #bfdbfe; border-radius: 12px;
-    padding: 14px 16px; margin: 16px 0;
+    padding: 14px 16px; margin: 8px 0 12px;
   }
-  .buscaHeader {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 10px;
-  }
-  .buscaHeader .icon {
-    width: 22px; height: 22px; color: var(--cf-primary);
-  }
+  .buscaHeader { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .buscaHeader .icon { width: 22px; height: 22px; color: var(--cf-primary); }
   .buscaHeader .titulo {
     font-size: 13px; font-weight: 700; color: #1e40af;
     text-transform: uppercase; letter-spacing: .04em;
   }
   .buscaHeader .contador {
-    margin-left: auto; font-size: 12px; color: #1e40af;
-    background: #fff; padding: 4px 10px; border-radius: 999px;
-    font-weight: 600; border: 1px solid #bfdbfe;
+    margin-left: auto; font-size: 12px; color: #1e40af; background: #fff;
+    padding: 4px 10px; border-radius: 999px; font-weight: 600; border: 1px solid #bfdbfe;
   }
-  .buscaCampos {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
+  .buscaCampos, .filtroSelects {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;
   }
-  .buscaCampos .campo {
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .buscaCampos label {
+  .campo { display: flex; flex-direction: column; gap: 4px; }
+  .campo label, .filtroTitulo {
     font-size: 11px; color: #1e40af; font-weight: 700;
     text-transform: uppercase; letter-spacing: .04em;
   }
-  .buscaCampos input {
+  .campo input, .campo select {
     border: 1px solid #bfdbfe; background: #fff;
     padding: 8px 12px; border-radius: 8px; font-size: 13px;
-    transition: .15s;
   }
-  .buscaCampos input:focus {
+  .campo input:focus, .campo select:focus {
     outline: none; border-color: var(--cf-primary);
     box-shadow: 0 0 0 3px rgba(37,99,235,.15);
   }
-  .buscaAcoes {
-    display: flex; justify-content: flex-end; gap: 8px;
-    margin-top: 10px;
+  #filtrosArea {
+    margin-top: 14px; padding-top: 14px; border-top: 1px dashed #bfdbfe;
+    display: flex; flex-direction: column; gap: 14px;
   }
-  .buscaAcoes button {
-    padding: 6px 12px; font-size: 12px;
+  .filtroTitulo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .filtroTitulo select {
+    font-size: 12px; padding: 4px 8px; text-transform: none;
+    letter-spacing: 0; font-weight: 500; border: 1px solid #bfdbfe;
   }
-  .buscaVazia {
-    text-align: center; padding: 24px; color: var(--cf-muted);
-    font-size: 13px;
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+    border: 1px solid #bfdbfe; background: #fff; border-radius: 999px;
+    font-size: 13px; cursor: pointer; user-select: none; transition: .15s;
+  }
+  .chip input { display: none; }
+  .chip small {
+    color: var(--cf-muted); font-size: 11px; background: var(--cf-bg);
+    padding: 1px 7px; border-radius: 999px; font-weight: 600;
+  }
+  .chip.ativo { background: var(--cf-primary); border-color: var(--cf-primary); color: #fff; }
+  .chip.ativo small { background: rgba(255,255,255,.25); color: #fff; }
+  .buscaAcoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .buscaAcoes button { padding: 6px 12px; font-size: 12px; }
+  .buscaVazia { text-align: center; padding: 24px; color: var(--cf-muted); font-size: 13px; }
+
+  .resumoFiltros { font-size: 13px; color: #374151; margin: 4px 0 10px; }
+  .fchip {
+    display: inline-block; background: #fef3c7; color: #92400e;
+    padding: 2px 8px; border-radius: 999px; font-size: 12px; margin: 2px 4px 2px 0;
   }
 
-  /* KPIs */
   .kpis {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px; margin: 12px 0 20px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px; margin: 8px 0 12px;
   }
   .kpi {
     background: linear-gradient(135deg, #eff6ff, #dbeafe);
-    border: 1px solid #bfdbfe; border-radius: 10px;
-    padding: 14px 16px;
+    border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 16px;
   }
   .kpi .label { font-size: 12px; color: #1e40af; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
   .kpi .value { font-size: 26px; font-weight: 700; color: #1e3a8a; margin-top: 4px; }
-  .kpi.green { background: linear-gradient(135deg,#ecfdf5,#d1fae5); border-color:#a7f3d0; }
-  .kpi.green .label { color:#065f46; } .kpi.green .value { color:#064e3b; }
-  .kpi.amber { background: linear-gradient(135deg,#fffbeb,#fef3c7); border-color:#fde68a; }
+  .kpi .extra { font-size: 12px; margin-top: 2px; opacity: .8; }
+  .kpi.green  { background: linear-gradient(135deg,#ecfdf5,#d1fae5); border-color:#a7f3d0; }
+  .kpi.green .label, .kpi.green .extra { color:#065f46; } .kpi.green .value { color:#064e3b; }
+  .kpi.amber  { background: linear-gradient(135deg,#fffbeb,#fef3c7); border-color:#fde68a; }
   .kpi.amber .label { color:#92400e; } .kpi.amber .value { color:#78350f; }
-  .kpi.rose { background: linear-gradient(135deg,#fef2f2,#fee2e2); border-color:#fecaca; }
+  .kpi.rose   { background: linear-gradient(135deg,#fef2f2,#fee2e2); border-color:#fecaca; }
   .kpi.rose .label { color:#991b1b; } .kpi.rose .value { color:#7f1d1d; }
+  .kpi.violet { background: linear-gradient(135deg,#f5f3ff,#ede9fe); border-color:#ddd6fe; }
+  .kpi.violet .label { color:#5b21b6; } .kpi.violet .value { color:#4c1d95; }
 
-  /* Grid de gráficos */
   .graficos {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 16px; margin-bottom: 20px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px; margin-bottom: 8px;
   }
   .card {
     background: #fff; border: 1px solid var(--cf-border); border-radius: 10px;
     padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.03);
   }
-  .card h3 {
-    margin: 0 0 8px; font-size: 13px; color: #374151;
-    font-weight: 600; letter-spacing: .02em;
-  }
+  .card h3 { margin: 0 0 8px; font-size: 13px; color: #374151; font-weight: 600; }
   .card canvas { width: 100% !important; height: 220px !important; }
 
-  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
-  th, td { padding: 8px; border-bottom: 1px solid var(--cf-border); text-align: left; }
-  th { background: #f9fafb; }
+  .tabelaWrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th, td { padding: 8px; border-bottom: 1px solid var(--cf-border); text-align: left; vertical-align: top; }
+  th { background: #f9fafb; white-space: nowrap; }
+  th.num, td.num { text-align: right; }
+  .diaChip {
+    display: inline-block; background: #eef2ff; color: #3730a3; font-size: 11px;
+    font-weight: 600; padding: 2px 8px; border-radius: 999px; margin: 1px 3px 1px 0; white-space: nowrap;
+  }
+  .diaChip.ativo { background: var(--cf-primary); color: #fff; }
+  .diaChip.extra { background: #f3f4f6; color: #374151; }
+  .muted { color: var(--cf-muted); }
+  .nota { font-size: 11px; color: var(--cf-muted); margin-top: 6px; }
   .status { font-size: 13px; color: #374151; }
   .tag {
     display: inline-block; background: #dbeafe; color: #1e40af;
     font-size: 12px; padding: 2px 8px; border-radius: 999px; margin-left: 6px;
   }
-  mark {
-    background: #fef08a; padding: 0 2px; border-radius: 3px;
+  mark { background: #fef08a; padding: 0 2px; border-radius: 3px; }
+
+  .relatorioBox {
+    border: 1px solid var(--cf-border); background: #fafafa;
+    border-radius: 10px; padding: 14px 16px;
   }
+  #tipoDescricao { margin: -4px 0 12px; color: var(--cf-muted); }
 </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- ---------- MARCA ---------- -->
   <div class="brand">
     <div class="logo">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -218,19 +230,19 @@
     </div>
     <div>
       <div class="nome">Credencia<span>Fácil</span> Relatórios</div>
-      <div class="sub">Gerador de relatórios em PDF</div>
+      <div class="sub">Relatórios completos de eventos</div>
     </div>
-    <div class="versao">v1.1.0</div>
+    <div class="versao">v1.3.0</div>
   </div>
 
   <div class="row">
     <input type="file" id="csvFile" accept=".csv,text/csv" />
-    <div class="status" id="status">Selecione um arquivo CSV para começar.</div>
+    <input type="text" id="nomeEvento" placeholder="Nome do evento (aparece no cabeçalho do PDF)" />
   </div>
+  <div class="status" id="status">Selecione um arquivo CSV para começar.</div>
 
-  <!-- ETAPA 1: seleção de campos -->
-  <div id="camposBox">
-    <h2>1. Escolha os campos que deseja usar <span class="tag" id="contadorCampos">0 selecionados</span></h2>
+  <div id="camposBox" style="margin-top:16px;">
+    <h2 style="margin-top:0;">1. Campos do relatório <span class="tag" id="contadorCampos">0 selecionados</span></h2>
     <div class="tools">
       <button class="sec" id="btnTodos">Selecionar todos</button>
       <button class="sec" id="btnNenhum">Limpar seleção</button>
@@ -239,532 +251,961 @@
     <div id="camposLista"></div>
   </div>
 
-  <!-- ETAPA 2: busca + KPIs + gráficos + preview + gerar PDF -->
   <div id="etapaFinal" style="display:none;">
 
-    <!-- ---------- BARRA DE BUSCA ---------- -->
-    <div class="buscaBox" id="buscaBox">
+    <h2>2. Indicadores</h2>
+    <div class="resumoFiltros" id="resumoFiltros"></div>
+    <div class="kpis" id="kpis"></div>
+    <div id="resumoDias"></div>
+
+    <h2>3. Gráficos</h2>
+    <div class="graficos" id="graficos"></div>
+
+    <h2>4. Participantes</h2>
+    <div class="buscaBox">
       <div class="buscaHeader">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="7"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <div class="titulo">Busca rápida</div>
+        <div class="titulo">Buscar e filtrar participantes</div>
         <div class="contador" id="buscaContador">0 de 0</div>
       </div>
 
-      <div class="buscaCampos" id="buscaCampos">
-        <!-- Preenchido dinamicamente com base nas colunas disponíveis -->
-      </div>
+      <div class="buscaCampos" id="buscaCampos"></div>
+      <div id="filtrosArea"></div>
 
       <div class="buscaAcoes">
-        <button class="sec" id="btnLimparBusca">Limpar busca</button>
+        <button class="sec" id="btnLimparBusca">Limpar busca e filtros</button>
       </div>
     </div>
 
-    <h2>2. Indicadores</h2>
-    <div class="kpis" id="kpis"></div>
-
-    <h2>3. Gráficos</h2>
-    <div class="graficos">
-      <div class="card"><h3>Inscritos por dia</h3><canvas id="chartDias"></canvas></div>
-      <div class="card"><h3>Credenciados vs Não credenciados</h3><canvas id="chartCred"></canvas></div>
-      <div class="card"><h3>Inscritos por categoria</h3><canvas id="chartCategoria"></canvas></div>
-      <div class="card"><h3>Status de pagamento</h3><canvas id="chartPagamento"></canvas></div>
-    </div>
-
-    <h2>4. Pré-visualização e geração</h2>
     <div class="row">
-      <label style="font-size:13px;">Orientação:
-        <select id="orientacao">
-          <option value="landscape">Paisagem</option>
-          <option value="portrait">Retrato</option>
+      <label class="inline">Ordenar por
+        <select id="ordenarPor">
+          <option value="original">Ordem do arquivo</option>
+          <option value="nome">Nome (A-Z)</option>
+          <option value="cadastroDesc">Cadastro mais recente</option>
+          <option value="cadastroAsc">Cadastro mais antigo</option>
+          <option value="id">ID</option>
         </select>
       </label>
-      <label style="font-size:13px;">Filtrar por <em>Credenciado</em>:
-        <select id="filtroCredenciado">
-          <option value="">Todos</option>
-          <option value="Sim">Sim</option>
-          <option value="Não">Não</option>
+      <label class="inline">Exibir
+        <select id="limitePreview">
+          <option value="15">15</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="todos">Todos</option>
         </select>
       </label>
-      <label style="font-size:13px;">
-        <input type="checkbox" id="incluirGraficos" checked /> Incluir gráficos no PDF
-      </label>
-      <button id="btnGerar">📄 Gerar PDF</button>
     </div>
 
     <div id="preview"></div>
+
+    <h2>5. Gerar relatório</h2>
+    <div class="relatorioBox">
+      <div class="row">
+        <label class="inline">Tipo de relatório
+          <select id="tipoRelatorio">
+            <option value="completo">Completo</option>
+            <option value="executivo">Executivo (resumo + gráficos)</option>
+            <option value="presenca">Lista de presença por dia</option>
+            <option value="tabela">Somente lista de participantes</option>
+          </select>
+        </label>
+        <label class="inline">Orientação
+          <select id="orientacao">
+            <option value="landscape">Paisagem</option>
+            <option value="portrait">Retrato</option>
+          </select>
+        </label>
+      </div>
+      <div class="status" id="tipoDescricao"></div>
+
+      <div class="row">
+        <label class="inline" id="lblGraficos"><input type="checkbox" id="incluirGraficos" checked /> Incluir gráficos</label>
+        <label class="inline" id="lblAssinatura"><input type="checkbox" id="colunaAssinatura" checked /> Coluna de assinatura</label>
+        <label class="inline"><input type="checkbox" id="mascararDados" /> Mascarar dados pessoais (LGPD)</label>
+      </div>
+
+      <div class="row" style="margin-bottom:0;">
+        <button id="btnGerar">📄 Gerar PDF</button>
+        <button class="sec" id="btnCSV">⬇️ Exportar CSV filtrado</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 const { jsPDF } = window.jspdf;
 
-const APP_NAME    = 'CredenciaFácil Relatórios';
-const APP_VERSION = 'v1.1.0';
-const APP_SITE    = 'https://credenciafacil.app';
+const APP_NAME     = 'CredenciaFácil Relatórios';
+const APP_VERSION  = 'v1.3.0';
+const APP_SITE     = 'https://credenciafacil.app';
+const COL_QTD_DIAS = 'Qtd. Dias';
+const SEM_DIA      = '__sem';
 
-let dadosCSV        = [];   // dados originais do CSV
-let dadosFiltrados  = [];   // após aplicar busca + filtro credenciado
-let colunasCSV      = [];
-let camposSel       = [];
-let termoBuscaPorCampo = {}; // { Nome Completo: 'bill', CPF: '123' }
+let dadosCSV       = [];
+let dadosFiltrados = [];
+let colunasCSV     = [];
+let camposSel      = [];
+let diasEvento     = [];
+let termoBusca     = {};
+let filtros        = novosFiltros();
+const charts       = {};
 
-const charts = {};
+const $ = id => document.getElementById(id);
 
-const fileInput    = document.getElementById('csvFile');
-const statusEl     = document.getElementById('status');
-const camposBox    = document.getElementById('camposBox');
-const camposLista  = document.getElementById('camposLista');
-const contadorEl   = document.getElementById('contadorCampos');
-const etapaFinal   = document.getElementById('etapaFinal');
-const previewEl    = document.getElementById('preview');
-const kpisEl       = document.getElementById('kpis');
-const buscaBox     = document.getElementById('buscaBox');
-const buscaCampos  = document.getElementById('buscaCampos');
-const buscaContEl  = document.getElementById('buscaContador');
+const ESSENCIAIS = ['ID','Nome Completo','Email','CPF','Celular','Instituição','Categoria',
+                    'Credenciado','Status Pagamento','Dias Inscritos', COL_QTD_DIAS,'Data Cadastro'];
 
-const ESSENCIAIS = ['ID','Nome Completo','Nome Crachá','Email','Celular',
-                    'Instituição','Cargo','Categoria','Credenciado','Status Pagamento'];
+const CAMPOS_BUSCA = [
+  { chave: 'nome',  rotulo: 'Nome',             colunas: ['Nome Completo', 'Nome Crachá'],
+    placeholder: 'Ex.: Bill Gades' },
+  { chave: 'cpf',   rotulo: 'CPF / Passaporte', colunas: ['CPF', 'Passaporte'],
+    placeholder: 'Com ou sem pontuação', tipo: 'documento' },
+  { chave: 'email', rotulo: 'E-mail',           colunas: ['Email'],
+    placeholder: 'Ex.: nome@empresa.com' }
+];
 
-// Campos prioritários que ganham destaque na busca
-const CAMPOS_BUSCA = ['Nome Completo', 'CPF', 'Email', 'Instituição',
-                      'Nome Crachá', 'Passaporte', 'Celular'];
+const FILTROS_SELECT = [
+  { chave: 'credenciado', coluna: 'Credenciado',      rotulo: 'Credenciado' },
+  { chave: 'categoria',   coluna: 'Categoria',        rotulo: 'Categoria' },
+  { chave: 'pagamento',   coluna: 'Status Pagamento', rotulo: 'Pagamento' },
+  { chave: 'bloqueado',   coluna: 'Bloqueado',        rotulo: 'Bloqueado' },
+  { chave: 'tipoDoc',     coluna: 'Tipo Documento',   rotulo: 'Tipo de documento' }
+];
+
+const GRAFICOS = [
+  { id: 'chartDias',          chave: 'dias',          titulo: 'Inscritos por dia do evento' },
+  { id: 'chartCadastro',      chave: 'cadastro',      titulo: 'Evolução dos cadastros' },
+  { id: 'chartCred',          chave: 'cred',          titulo: 'Credenciados vs Não credenciados' },
+  { id: 'chartCategoria',     chave: 'categoria',     titulo: 'Inscritos por categoria' },
+  { id: 'chartPagamento',     chave: 'pagamento',     titulo: 'Status de pagamento' },
+  { id: 'chartInstituicao',   chave: 'instituicao',   titulo: 'Top 10 instituições' },
+  { id: 'chartNacionalidade', chave: 'nacionalidade', titulo: 'Nacionalidade' }
+];
+
+const PALETA = ['#2563eb','#10b981','#f59e0b','#ef4444','#7c3aed','#06b6d4','#ec4899','#9ca3af'];
+
+const TIPOS_RELATORIO = {
+  completo:  'Resumo com indicadores, tabelas por dia, categoria, pagamento, instituição e nacionalidade, gráficos e a lista detalhada.',
+  executivo: 'Resumo e gráficos, sem a lista de participantes. Ideal para apresentar ao cliente ou patrocinador.',
+  presenca:  'Uma seção por dia do evento, em ordem alfabética, com coluna de assinatura. Usa os dias marcados no filtro ou, se nenhum, todos os dias.',
+  tabela:    'Somente a lista detalhada dos participantes filtrados.'
+};
+
+function novosFiltros() {
+  return { dias: new Set(), modoDias: 'qualquer', selects: {}, cadDe: '', cadAte: '' };
+}
+
+// Cards dos gráficos
+$('graficos').innerHTML = GRAFICOS.map(g => `
+  <div class="card" id="card_${g.id}"><h3>${g.titulo}</h3><canvas id="${g.id}"></canvas></div>
+`).join('');
 
 // ---------------------------------------------
-// 1) Leitura do CSV
+// 1) Leitura e preparação do CSV
 // ---------------------------------------------
-fileInput.addEventListener('change', (e) => {
+$('csvFile').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   Papa.parse(file, {
-    header: true, skipEmptyLines: true,
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: h => h.replace(/^\uFEFF/, '').trim(),
     complete: (result) => {
       colunasCSV = (result.meta.fields || []).filter(Boolean);
-      dadosCSV   = result.data;
-
       if (!colunasCSV.length) {
-        statusEl.textContent = '❌ Nenhuma coluna detectada no CSV.';
+        $('status').textContent = '❌ Nenhuma coluna detectada no CSV.';
         return;
       }
-      statusEl.textContent =
-        `✔️ ${dadosCSV.length} registros e ${colunasCSV.length} colunas carregados.`;
+      dadosCSV = result.data.filter(l => colunasCSV.some(c => String(l[c] ?? '').trim()));
+      prepararDados();
 
-      camposBox.style.display = 'block';
-      etapaFinal.style.display = 'none';
+      $('status').textContent =
+        `✔️ ${dadosCSV.length} registros carregados` +
+        (diasEvento.length ? ` · ${diasEvento.length} dia(s) de evento: ${diasEvento.map(isoParaBR).join(', ')}` : '') + '.';
 
-      // Reinicia a busca ao trocar de arquivo
-      termoBuscaPorCampo = {};
+      termoBusca = {};
+      filtros = novosFiltros();
+      $('camposBox').style.display = 'block';
+      $('etapaFinal').style.display = 'none';
 
       renderCamposLista();
+      renderBusca();
+      renderFiltros();
+      atualizarDescricaoTipo();
       selecionarEssenciais();
     },
-    error: (err) => { statusEl.textContent = '❌ Erro ao ler CSV: ' + err.message; }
+    error: (err) => { $('status').textContent = '❌ Erro ao ler CSV: ' + err.message; }
   });
 });
 
+function prepararDados() {
+  const temDias = colunasCSV.includes('Dias Inscritos');
+  const todos = new Set();
+
+  dadosCSV.forEach(l => {
+    const p = parseDias(l['Dias Inscritos']);
+    l.__dias        = p.datas;
+    l.__diasExtras  = p.extras;
+    l.__cadastro    = normalizarData(l['Data Cadastro'] || '');
+    l.__cadastroKey = chaveDataHora(l['Data Cadastro'] || '');
+    p.datas.forEach(d => todos.add(d));
+    if (temDias) l[COL_QTD_DIAS] = String(p.datas.length || p.extras.length);
+  });
+
+  diasEvento = [...todos].sort();
+
+  if (temDias && !colunasCSV.includes(COL_QTD_DIAS)) {
+    colunasCSV.splice(colunasCSV.indexOf('Dias Inscritos') + 1, 0, COL_QTD_DIAS);
+  }
+}
+
+function parseDias(bruto) {
+  const texto = String(bruto ?? '').trim();
+  const datas = new Set(), extras = [];
+  if (!texto || texto === '-') return { datas: [], extras: [] };
+
+  // 1) Estratégia principal: capturar TODAS as datas no texto via regex global
+  //    Aceita: yyyy-mm-dd | dd/mm/yyyy | dd-mm-yyyy
+  const regexData = /\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{2}-\d{2}-\d{4}/g;
+  const achadas = texto.match(regexData) || [];
+
+  achadas.forEach(d => {
+    const iso = normalizarData(d);
+    if (iso) datas.add(iso);
+  });
+
+  // 2) Se NENHUMA data foi encontrada, guarda o texto como "extra"
+  //    (ex.: "a confirmar", "premium", etc.)
+  if (!datas.size) {
+    // Divide por pipe, ponto-e-vírgula, vírgula, quebra de linha ou " - " isolado
+    texto.split(/\s*\|\s*|\s*;\s*|\s*,\s*|\n|\s+-\s+/)
+      .map(p => p.trim())
+      .filter(p => p && p !== '-')
+      .forEach(p => extras.push(p));
+  }
+
+  // 3) Detecta ranges explícitos também (opcional, reforço)
+  //    "2026-11-30 a 2026-12-02" ou "30/11/2026 até 02/12/2026"
+  const rangeISO = texto.match(/(\d{4}-\d{2}-\d{2})\s*(?:a|até|to|–|—)\s*(\d{4}-\d{2}-\d{2})/i);
+  if (rangeISO) {
+    const cur = new Date(rangeISO[1] + 'T12:00:00');
+    const fim = new Date(rangeISO[2] + 'T12:00:00');
+    while (cur <= fim) {
+      datas.add(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+
+  return { datas: [...datas].sort(), extras };
+}
+
 // ---------------------------------------------
-// 2) Lista de campos
+// 2) Seleção de campos
 // ---------------------------------------------
 function renderCamposLista() {
-  camposLista.innerHTML = colunasCSV.map(col => `
+  $('camposLista').innerHTML = colunasCSV.map(col => `
     <label>
       <input type="checkbox" value="${escapeHtml(col)}" data-campo />
       <span>${escapeHtml(col)}</span>
     </label>
   `).join('');
-  camposLista.querySelectorAll('input[data-campo]').forEach(chk =>
+  $('camposLista').querySelectorAll('input[data-campo]').forEach(chk =>
     chk.addEventListener('change', atualizarSelecao));
-  atualizarSelecao();
 }
 
 function atualizarSelecao() {
-  camposSel = [...camposLista.querySelectorAll('input[data-campo]:checked')]
-    .map(c => c.value);
-  contadorEl.textContent = `${camposSel.length} selecionado${camposSel.length === 1 ? '' : 's'}`;
+  camposSel = [...$('camposLista').querySelectorAll('input[data-campo]:checked')].map(c => c.value);
+  $('contadorCampos').textContent = `${camposSel.length} selecionado${camposSel.length === 1 ? '' : 's'}`;
 
-  // 👇 Mostra a etapa final sempre que houver CSV carregado
-  if (!dadosCSV.length) {
-    etapaFinal.style.display = 'none';
-    return;
-  }
-  etapaFinal.style.display = 'block';
-
-  renderBusca();        // desenha a barra de busca
-  aplicarFiltros();     // KPIs/gráficos/preview (mesmo com 0 campos marcados)
+  if (!camposSel.length) { $('etapaFinal').style.display = 'none'; return; }
+  $('etapaFinal').style.display = 'block';
+  aplicarFiltros();
 }
 
-// ---------------------------------------------
-// 3) Botões auxiliares
-// ---------------------------------------------
-document.getElementById('btnTodos').addEventListener('click', () => {
-  camposLista.querySelectorAll('input[data-campo]').forEach(c => c.checked = true);
+function colunasVisiveis() { return colunasCSV.filter(c => camposSel.includes(c)); }
+
+$('btnTodos').addEventListener('click', () => {
+  $('camposLista').querySelectorAll('input[data-campo]').forEach(c => c.checked = true);
   atualizarSelecao();
 });
-document.getElementById('btnNenhum').addEventListener('click', () => {
-  camposLista.querySelectorAll('input[data-campo]').forEach(c => c.checked = false);
+$('btnNenhum').addEventListener('click', () => {
+  $('camposLista').querySelectorAll('input[data-campo]').forEach(c => c.checked = false);
   atualizarSelecao();
 });
-document.getElementById('btnEssenciais').addEventListener('click', selecionarEssenciais);
+$('btnEssenciais').addEventListener('click', selecionarEssenciais);
+
 function selecionarEssenciais() {
-  camposLista.querySelectorAll('input[data-campo]').forEach(c =>
-    c.checked = ESSENCIAIS.includes(c.value));
-  if (!camposLista.querySelector('input[data-campo]:checked')) {
-    [...camposLista.querySelectorAll('input[data-campo]')]
-      .slice(0, 6).forEach(c => c.checked = true);
-  }
+  const chks = [...$('camposLista').querySelectorAll('input[data-campo]')];
+  chks.forEach(c => c.checked = ESSENCIAIS.includes(c.value));
+  if (!chks.some(c => c.checked)) chks.slice(0, 6).forEach(c => c.checked = true);
   atualizarSelecao();
 }
 
 // ---------------------------------------------
-// 4) Barra de busca
+// 3) Busca
 // ---------------------------------------------
+function camposBuscaDisponiveis() {
+  return CAMPOS_BUSCA.filter(def => def.colunas.some(c => colunasCSV.includes(c)));
+}
+
 function renderBusca() {
-  // Usa todos os campos de busca que existem no CSV, na ordem definida
-  const camposDisponiveis = CAMPOS_BUSCA.filter(c => colunasCSV.includes(c));
-
-  // Se nenhum dos prioritários existe, pega os 4 primeiros do CSV
-  const lista = camposDisponiveis.length
-    ? camposDisponiveis
-    : colunasCSV.slice(0, 4);
-
-  buscaCampos.innerHTML = lista.map(campo => `
+  $('buscaCampos').innerHTML = camposBuscaDisponiveis().map(def => `
     <div class="campo">
-      <label for="busca_${slugify(campo)}">${escapeHtml(campo)}</label>
-      <input type="text"
-             id="busca_${slugify(campo)}"
-             data-busca-campo="${escapeHtml(campo)}"
-             placeholder="Digite para filtrar..."
-             value="${escapeHtml(termoBuscaPorCampo[campo] || '')}" />
+      <label for="busca_${def.chave}">${escapeHtml(def.rotulo)}</label>
+      <input type="text" id="busca_${def.chave}" data-busca-chave="${def.chave}"
+             placeholder="${escapeHtml(def.placeholder)}" autocomplete="off"
+             value="${escapeHtml(termoBusca[def.chave] || '')}" />
     </div>
   `).join('');
 
-  buscaCampos.querySelectorAll('input[data-busca-campo]').forEach(inp => {
+  $('buscaCampos').querySelectorAll('input[data-busca-chave]').forEach(inp =>
     inp.addEventListener('input', (e) => {
-      termoBuscaPorCampo[e.target.dataset.buscaCampo] = e.target.value;
+      termoBusca[e.target.dataset.buscaChave] = e.target.value;
       aplicarFiltros();
-    });
+    }));
+}
+
+function correspondeBusca(linha, def, termo) {
+  const t = (termo || '').trim();
+  if (!t) return true;
+
+  return def.colunas.filter(c => colunasCSV.includes(c)).some(c => {
+    const valor = linha[c] ?? '';
+    if (def.tipo === 'documento') {
+      if (/^[\d.\-\/\s]+$/.test(t)) {
+        const dig = soDigitos(t);
+        return dig !== '' && soDigitos(valor).includes(dig);
+      }
+      const limpo = s => normalizarTexto(s).replace(/[^a-z0-9]/g, '');
+      return limpo(valor).includes(limpo(t));
+    }
+    return normalizarTexto(valor).includes(normalizarTexto(t));
   });
 }
 
-document.getElementById('btnLimparBusca').addEventListener('click', () => {
-  termoBuscaPorCampo = {};
-  buscaCampos.querySelectorAll('input[data-busca-campo]').forEach(i => i.value = '');
+// ---------------------------------------------
+// 4) Filtros
+// ---------------------------------------------
+function renderFiltros() {
+  const area = $('filtrosArea');
+  const blocos = [];
+
+  if (colunasCSV.includes('Dias Inscritos')) {
+    const cont = {}; let sem = 0;
+    dadosCSV.forEach(l => {
+      if (!l.__dias.length) sem++;
+      l.__dias.forEach(d => cont[d] = (cont[d] || 0) + 1);
+    });
+    const chips = diasEvento.map(d => chipDia(d, rotuloDia(d), cont[d]));
+    if (sem) chips.push(chipDia(SEM_DIA, 'Sem dia informado', sem));
+
+    blocos.push(`
+      <div>
+        <div class="filtroTitulo">Dias do evento
+          <select id="modoDias">
+            <option value="qualquer">inscrito em qualquer dia marcado</option>
+            <option value="todos">inscrito em todos os dias marcados</option>
+          </select>
+        </div>
+        <div class="chips">${chips.join('') || '<span class="muted">Nenhum dia encontrado no arquivo.</span>'}</div>
+      </div>`);
+  }
+
+  const selects = FILTROS_SELECT.filter(f => colunasCSV.includes(f.coluna)).map(f => {
+    const valores = [...new Set(dadosCSV.map(l => String(l[f.coluna] ?? '').trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    return `
+      <div class="campo">
+        <label>${escapeHtml(f.rotulo)}</label>
+        <select data-filtro="${f.chave}">
+          <option value="">Todos</option>
+          ${valores.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')}
+        </select>
+      </div>`;
+  });
+
+  if (colunasCSV.includes('Data Cadastro')) {
+    selects.push(`
+      <div class="campo"><label for="cadDe">Cadastro de</label><input type="date" id="cadDe" /></div>
+      <div class="campo"><label for="cadAte">Cadastro até</label><input type="date" id="cadAte" /></div>`);
+  }
+  if (selects.length) blocos.push(`<div class="filtroSelects">${selects.join('')}</div>`);
+
+  area.innerHTML = blocos.join('');
+  area.style.display = blocos.length ? 'flex' : 'none';
+
+  area.querySelectorAll('input[data-dia]').forEach(chk => chk.addEventListener('change', () => {
+    if (chk.checked) filtros.dias.add(chk.value); else filtros.dias.delete(chk.value);
+    chk.closest('.chip').classList.toggle('ativo', chk.checked);
+    aplicarFiltros();
+  }));
+
+  const modo = $('modoDias');
+  if (modo) modo.addEventListener('change', () => { filtros.modoDias = modo.value; aplicarFiltros(); });
+
+  area.querySelectorAll('select[data-filtro]').forEach(sel => sel.addEventListener('change', () => {
+    filtros.selects[sel.dataset.filtro] = sel.value;
+    aplicarFiltros();
+  }));
+
+  ['cadDe', 'cadAte'].forEach(id => {
+    const inp = $(id);
+    if (inp) inp.addEventListener('change', () => { filtros[id] = inp.value; aplicarFiltros(); });
+  });
+}
+
+function chipDia(valor, rotulo, qtd) {
+  return `<label class="chip"><input type="checkbox" data-dia value="${escapeHtml(valor)}" />
+          <span>${escapeHtml(rotulo)}</span><small>${qtd}</small></label>`;
+}
+
+$('btnLimparBusca').addEventListener('click', () => {
+  termoBusca = {};
+  filtros = novosFiltros();
+  renderBusca();
+  renderFiltros();
   aplicarFiltros();
 });
 
+function descreverFiltrosAtivos() {
+  const p = [];
+  CAMPOS_BUSCA.forEach(def => {
+    const t = (termoBusca[def.chave] || '').trim();
+    if (t) p.push(`${def.rotulo} contém "${t}"`);
+  });
+  if (filtros.dias.size) {
+    const nomes = [...filtros.dias].sort().map(d => d === SEM_DIA ? 'sem dia' : isoParaBR(d));
+    p.push(`Dias (${filtros.modoDias === 'todos' ? 'todos' : 'qualquer'}): ${nomes.join(', ')}`);
+  }
+  FILTROS_SELECT.forEach(f => {
+    const v = filtros.selects[f.chave];
+    if (v) p.push(`${f.rotulo} = ${v}`);
+  });
+  if (filtros.cadDe || filtros.cadAte) {
+    p.push('Cadastro' +
+      (filtros.cadDe ? ' de ' + isoParaBR(filtros.cadDe) : '') +
+      (filtros.cadAte ? ' até ' + isoParaBR(filtros.cadAte) : ''));
+  }
+  return p;
+}
+
 // ---------------------------------------------
-// 5) Aplicar filtros (busca + credenciado) e re-renderizar tudo
+// 5) Aplicar filtros
 // ---------------------------------------------
 function aplicarFiltros() {
-  const filtroCred = document.getElementById('filtroCredenciado').value;
+  const defs   = camposBuscaDisponiveis();
+  const sels   = FILTROS_SELECT.filter(f => filtros.selects[f.chave]);
+  const diasSel = [...filtros.dias];
 
-  dadosFiltrados = dadosCSV.filter(linha => {
-    // Filtro "Credenciado"
-    if (filtroCred && colunasCSV.includes('Credenciado')) {
-      if ((linha['Credenciado'] || '').trim() !== filtroCred) return false;
+  const filtrados = dadosCSV.filter(l => {
+    if (!defs.every(def => correspondeBusca(l, def, termoBusca[def.chave]))) return false;
+
+    for (const f of sels) {
+      if (String(l[f.coluna] ?? '').trim() !== filtros.selects[f.chave]) return false;
     }
-    // Filtros por campo (todos precisam bater)
-    for (const [campo, termo] of Object.entries(termoBuscaPorCampo)) {
-      const t = (termo || '').trim();
-      if (!t) continue;
-      const valor = (linha[campo] ?? '').toString();
-      if (!valor.toLowerCase().includes(t.toLowerCase())) return false;
+
+    if (diasSel.length) {
+      const tem = d => d === SEM_DIA ? !l.__dias.length : l.__dias.includes(d);
+      const ok = filtros.modoDias === 'todos' ? diasSel.every(tem) : diasSel.some(tem);
+      if (!ok) return false;
+    }
+
+    if (filtros.cadDe || filtros.cadAte) {
+      if (!l.__cadastro) return false;
+      if (filtros.cadDe  && l.__cadastro < filtros.cadDe)  return false;
+      if (filtros.cadAte && l.__cadastro > filtros.cadAte) return false;
     }
     return true;
   });
 
-  // Atualiza contador
-  buscaContEl.textContent = `${dadosFiltrados.length} de ${dadosCSV.length}`;
+  dadosFiltrados = ordenarLinhas(filtrados);
+  $('buscaContador').textContent = `${dadosFiltrados.length} de ${dadosCSV.length}`;
 
-  // Re-render
-  renderPreview();
+  renderResumoFiltros();
   renderKPIs();
+  renderResumoDias();
   renderGraficos();
+  renderPreview();
 }
 
-// Deixa o filtro de credenciado reagir
-document.getElementById('filtroCredenciado').addEventListener('change', aplicarFiltros);
+function ordenarLinhas(linhas) {
+  const modo = $('ordenarPor').value;
+  const cmp = {
+    nome:         cmpNome,
+    cadastroDesc: (a, b) => b.__cadastroKey.localeCompare(a.__cadastroKey),
+    cadastroAsc:  (a, b) => a.__cadastroKey.localeCompare(b.__cadastroKey),
+    id:           (a, b) => (parseFloat(a['ID']) || 0) - (parseFloat(b['ID']) || 0)
+  }[modo];
+  return cmp ? [...linhas].sort(cmp) : linhas;
+}
+function cmpNome(a, b) {
+  const n = l => normalizarTexto(l['Nome Completo'] || l['Nome Crachá'] || '');
+  return n(a).localeCompare(n(b), 'pt-BR');
+}
+
+$('ordenarPor').addEventListener('change', aplicarFiltros);
+$('limitePreview').addEventListener('change', renderPreview);
+
+function renderResumoFiltros() {
+  const f = descreverFiltrosAtivos();
+  $('resumoFiltros').innerHTML =
+    `Exibindo <b>${dadosFiltrados.length}</b> de ${dadosCSV.length} participantes · ` +
+    (f.length ? f.map(x => `<span class="fchip">${escapeHtml(x)}</span>`).join('')
+              : '<span class="muted">sem filtros</span>');
+}
 
 // ---------------------------------------------
-// 6) Preview da tabela
+// 6) KPIs e resumo por dia
+// ---------------------------------------------
+function calcularKPIs(L) {
+  const norm = v => String(v ?? '').trim().toLowerCase();
+  const tem  = c => colunasCSV.includes(c);
+  const cont = (c, alvos) => L.filter(l => alvos.includes(norm(l[c]))).length;
+  const total = L.length;
+  const k = [{ label: 'Total de inscritos', value: total }];
+
+  if (tem('Credenciado')) {
+    const cred = cont('Credenciado', ['sim']);
+    k.push({ label: 'Credenciados', value: cred, extra: `${pct(cred, total)} do total`, cls: 'green' });
+    k.push({ label: 'Não credenciados', value: cont('Credenciado', ['não', 'nao']), cls: 'amber' });
+  }
+  if (tem('Status Pagamento')) {
+    k.push({ label: 'Pagamento OK',
+             value: cont('Status Pagamento', ['pago','paid','free','gratuito','confirmado','aprovado']) });
+  }
+  if (tem('Bloqueado')) k.push({ label: 'Bloqueados', value: cont('Bloqueado', ['sim']), cls: 'rose' });
+  if (tem('Dias Inscritos')) {
+    k.push({ label: 'Dias de evento', value: new Set(L.flatMap(l => l.__dias)).size, cls: 'violet' });
+    k.push({ label: 'Inscritos em 2+ dias', value: L.filter(l => l.__dias.length > 1).length, cls: 'violet' });
+  }
+  if (tem('Tipo Documento')) {
+    k.push({ label: 'Com passaporte', value: cont('Tipo Documento', ['passport', 'passaporte']) });
+  }
+  return k;
+}
+
+function renderKPIs() {
+  $('kpis').innerHTML = calcularKPIs(dadosFiltrados).map(k => `
+    <div class="kpi ${k.cls || ''}">
+      <div class="label">${k.label}</div>
+      <div class="value">${k.value}</div>
+      ${k.extra ? `<div class="extra">${k.extra}</div>` : ''}
+    </div>`).join('');
+}
+
+function calcularResumoDias(linhas) {
+  const mapa = {};
+  linhas.forEach(l => {
+    const cred = String(l['Credenciado'] ?? '').trim().toLowerCase() === 'sim';
+    (l.__dias.length ? l.__dias : [SEM_DIA]).forEach(d => {
+      const r = mapa[d] || (mapa[d] = { dia: d, total: 0, cred: 0 });
+      r.total++;
+      if (cred) r.cred++;
+    });
+  });
+  return Object.values(mapa).sort((a, b) =>
+    a.dia === SEM_DIA ? 1 : b.dia === SEM_DIA ? -1 : a.dia.localeCompare(b.dia));
+}
+
+function renderResumoDias() {
+  const el = $('resumoDias');
+  if (!colunasCSV.includes('Dias Inscritos')) { el.innerHTML = ''; return; }
+  const res = calcularResumoDias(dadosFiltrados);
+  if (!res.length) { el.innerHTML = ''; return; }
+  const temCred = colunasCSV.includes('Credenciado');
+
+  el.innerHTML = `
+    <h3 class="subtitulo">Resumo por dia do evento</h3>
+    <div class="tabelaWrap">
+      <table>
+        <thead><tr>
+          <th>Dia</th><th class="num">Inscritos</th>
+          ${temCred ? '<th class="num">Credenciados*</th><th class="num">Não credenciados</th><th class="num">Taxa</th>' : ''}
+        </tr></thead>
+        <tbody>
+          ${res.map(r => `<tr>
+            <td>${escapeHtml(rotuloDia(r.dia))}</td>
+            <td class="num">${r.total}</td>
+            ${temCred ? `<td class="num">${r.cred}</td><td class="num">${r.total - r.cred}</td><td class="num">${pct(r.cred, r.total)}</td>` : ''}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    ${temCred ? '<div class="nota">* O campo Credenciado do CSV é o status geral do participante, não um check-in por dia.</div>' : ''}`;
+}
+
+// ---------------------------------------------
+// 7) Pré-visualização
 // ---------------------------------------------
 function renderPreview() {
-  if (!camposSel.length) {
-    previewEl.innerHTML = `<div class="buscaVazia">Selecione ao menos um campo acima para ver a tabela.</div>`;
-    return;
-  }
+  const el = $('preview');
+  const colunas = colunasVisiveis();
+  if (!colunas.length) { el.innerHTML = ''; return; }
   if (!dadosFiltrados.length) {
-    previewEl.innerHTML = `<div class="buscaVazia">Nenhum registro encontrado com os filtros atuais.</div>`;
+    el.innerHTML = `<div class="buscaVazia">Nenhum participante encontrado com os filtros atuais.</div>`;
     return;
   }
 
-  const colunas = colunasCSV.filter(c => camposSel.includes(c));
-  const limite = 15;
+  const lim = $('limitePreview').value;
+  const limite = lim === 'todos' ? dadosFiltrados.length : parseInt(lim, 10);
 
-  previewEl.innerHTML = `
-    <table>
-      <thead><tr>${colunas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
-      <tbody>
-        ${dadosFiltrados.slice(0, limite).map(linha => `
-          <tr>${colunas.map(c => {
-            const bruto = (linha[c] ?? '').toString();
-            return `<td>${destacar(bruto, c)}</td>`;
-          }).join('')}</tr>
-        `).join('')}
-      </tbody>
-    </table>
-    ${dadosFiltrados.length > limite
-      ? `<div class="status">Mostrando ${limite} de ${dadosFiltrados.length} registros filtrados.</div>` : ''}
-  `;
+  el.innerHTML = `
+    <div class="tabelaWrap">
+      <table>
+        <thead><tr>${colunas.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${dadosFiltrados.slice(0, limite).map(l => `
+            <tr>${colunas.map(c => c === 'Dias Inscritos'
+              ? `<td>${chipsDias(l)}</td>`
+              : `<td>${destacar(formatarValor(c, l), c)}</td>`).join('')}</tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="status" style="margin-top:6px;">
+      Mostrando ${Math.min(limite, dadosFiltrados.length)} de ${dadosFiltrados.length} participantes filtrados.
+    </div>`;
 }
 
-// Realça o termo buscado quando há filtro ativo nesse campo
+function chipsDias(l) {
+  const chips = [
+    ...l.__dias.map(d => `<span class="diaChip${filtros.dias.has(d) ? ' ativo' : ''}">${isoParaBR(d)}</span>`),
+    ...l.__diasExtras.map(e => `<span class="diaChip extra">${escapeHtml(e)}</span>`)
+  ];
+  return chips.length ? chips.join('') : '<span class="muted">-</span>';
+}
+
 function destacar(texto, campo) {
-  const termo = (termoBuscaPorCampo[campo] || '').trim();
-  const esc = escapeHtml(texto);
-  if (!termo) return esc;
-  const re = new RegExp('(' + escapeRegex(escapeHtml(termo)) + ')', 'ig');
-  return esc.replace(re, '<mark>$1</mark>');
-}
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+  const def = CAMPOS_BUSCA.find(d => d.colunas.includes(campo));
+  const termo = def ? normalizarTexto(termoBusca[def.chave]) : '';
+  const orig = String(texto).normalize('NFC');
+  if (!termo) return escapeHtml(orig);
 
-// ---------------------------------------------
-// 7) KPIs (usam dadosFiltrados)
-// ---------------------------------------------
-function renderKPIs() {
-  const total = dadosFiltrados.length;
-  const norm = v => (v ?? '').toString().trim().toLowerCase();
+  const base = orig.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const i = base.indexOf(termo);
+  if (i < 0) return escapeHtml(orig);
 
-  const contar = (coluna, valoresAlvo) => {
-    if (!colunasCSV.includes(coluna)) return 0;
-    return dadosFiltrados.filter(l => valoresAlvo.includes(norm(l[coluna]))).length;
-  };
-
-  const credenciados    = contar('Credenciado', ['sim']);
-  const naoCredenciados = contar('Credenciado', ['não','nao']);
-  const pagos           = contar('Status Pagamento', ['pago','paid','free','confirmado']);
-  const bloqueados      = contar('Bloqueado', ['sim']);
-
-  kpisEl.innerHTML = `
-    <div class="kpi"><div class="label">Total de inscritos</div><div class="value">${total}</div></div>
-    <div class="kpi green"><div class="label">Credenciados</div><div class="value">${credenciados}</div></div>
-    <div class="kpi amber"><div class="label">Não credenciados</div><div class="value">${naoCredenciados}</div></div>
-    <div class="kpi"><div class="label">Pagamento OK</div><div class="value">${pagos}</div></div>
-    <div class="kpi rose"><div class="label">Bloqueados</div><div class="value">${bloqueados}</div></div>
-  `;
+  return escapeHtml(orig.slice(0, i))
+       + '<mark>' + escapeHtml(orig.slice(i, i + termo.length)) + '</mark>'
+       + escapeHtml(orig.slice(i + termo.length));
 }
 
 // ---------------------------------------------
-// 8) Gráficos (usam dadosFiltrados)
+// 8) Gráficos
 // ---------------------------------------------
-function destruirChart(id) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+function destruirChart(k) { if (charts[k]) { charts[k].destroy(); delete charts[k]; } }
+function mostrarCard(id, visivel) { $('card_' + id).style.display = visivel ? '' : 'none'; }
+function criarChart(chave, canvasId, config) {
+  charts[chave] = new Chart($(canvasId).getContext('2d'), config);
 }
+function colNacionalidade() {
+  return colunasCSV.includes('Nacionalidade') ? 'Nacionalidade'
+       : colunasCSV.includes('País Residência') ? 'País Residência' : null;
+}
+
 function renderGraficos() {
   renderGraficoDias();
-  renderGraficoCredenciados();
-  renderGraficoCategoria();
-  renderGraficoPagamento();
+  renderGraficoCadastro();
+  renderGraficoCred();
+  renderGraficoContagem('categoria',     'chartCategoria',     'Categoria',        'bar');
+  renderGraficoContagem('pagamento',     'chartPagamento',     'Status Pagamento', 'pizza');
+  renderGraficoContagem('instituicao',   'chartInstituicao',   'Instituição',      'barH', 10);
+  renderGraficoContagem('nacionalidade', 'chartNacionalidade', colNacionalidade(), 'pizza', 6);
 }
 
 function renderGraficoDias() {
   destruirChart('dias');
-  let labels = [], valores = [], titulo = '';
+  const res = colunasCSV.includes('Dias Inscritos')
+    ? calcularResumoDias(dadosFiltrados).filter(r => r.dia !== SEM_DIA) : [];
+  mostrarCard('chartDias', res.length > 0);
+  if (!res.length) return;
 
-  if (colunasCSV.includes('Data Cadastro')) {
-    const contagem = {};
-    dadosFiltrados.forEach(l => {
-      const bruto = (l['Data Cadastro'] || '').trim();
-      if (!bruto) return;
-      const dia = normalizarData(bruto);
-      if (!dia) return;
-      contagem[dia] = (contagem[dia] || 0) + 1;
-    });
-    const chaves = Object.keys(contagem).sort();
-    labels  = chaves.map(d => d.split('-').reverse().slice(0,2).join('/'));
-    valores = chaves.map(k => contagem[k]);
-    titulo  = 'por dia de cadastro';
-  } else if (colunasCSV.includes('Dias Inscritos')) {
-    const contagem = {};
-    dadosFiltrados.forEach(l => {
-      const v = (l['Dias Inscritos'] || '').trim() || '—';
-      contagem[v] = (contagem[v] || 0) + 1;
-    });
-    labels  = Object.keys(contagem);
-    valores = Object.values(contagem);
-    titulo  = 'por Dias Inscritos';
-  }
+  const temCred = colunasCSV.includes('Credenciado');
+  const datasets = temCred
+    ? [
+        { label: 'Credenciados',       data: res.map(r => r.cred),          backgroundColor: '#10b981', borderRadius: 4 },
+        { label: 'Ainda não credenciados', data: res.map(r => r.total - r.cred), backgroundColor: '#f59e0b', borderRadius: 4 }
+      ]
+    : [{ label: 'Inscritos', data: res.map(r => r.total), backgroundColor: '#2563eb', borderRadius: 6 }];
 
-  const ctx = document.getElementById('chartDias').getContext('2d');
-  charts.dias = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: `Inscritos ${titulo}`,
-        data: valores,
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37,99,235,.15)',
-        fill: true, tension: .35, pointRadius: 3
-      }]
-    },
-    options: opcoesPadrao()
+  criarChart('dias', 'chartDias', {
+    type: 'bar',
+    data: { labels: res.map(r => rotuloDia(r.dia)), datasets },
+    options: opcoesPadrao({ stacked: temCred })
   });
 }
 
-function renderGraficoCredenciados() {
-  destruirChart('cred');
-  if (!colunasCSV.includes('Credenciado')) return;
-
-  const norm = v => (v ?? '').toString().trim().toLowerCase();
-  let sim = 0, nao = 0, outros = 0;
-  dadosFiltrados.forEach(l => {
-    const v = norm(l['Credenciado']);
-    if (v === 'sim') sim++;
-    else if (v === 'não' || v === 'nao') nao++;
-    else outros++;
-  });
-
-  const labels = ['Credenciados','Não credenciados'];
-  const data   = [sim, nao];
-  if (outros) { labels.push('Sem informação'); data.push(outros); }
-
-  const ctx = document.getElementById('chartCred').getContext('2d');
-  charts.cred = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: ['#10b981','#ef4444','#9ca3af'],
-        borderWidth: 0
-      }]
-    },
-    options: opcoesPadrao({ doughnut: true })
-  });
-}
-
-function renderGraficoCategoria() {
-  destruirChart('categoria');
-  if (!colunasCSV.includes('Categoria')) return;
-
+function renderGraficoCadastro() {
+  destruirChart('cadastro');
   const contagem = {};
-  dadosFiltrados.forEach(l => {
-    const v = (l['Categoria'] || '').trim() || '—';
-    contagem[v] = (contagem[v] || 0) + 1;
-  });
-  const ordenado = Object.entries(contagem).sort((a,b) => b[1]-a[1]);
-  const labels  = ordenado.map(([k]) => k);
-  const valores = ordenado.map(([,v]) => v);
+  if (colunasCSV.includes('Data Cadastro')) {
+    dadosFiltrados.forEach(l => { if (l.__cadastro) contagem[l.__cadastro] = (contagem[l.__cadastro] || 0) + 1; });
+  }
+  const chaves = Object.keys(contagem).sort();
+  mostrarCard('chartCadastro', chaves.length > 0);
+  if (!chaves.length) return;
 
-  const ctx = document.getElementById('chartCategoria').getContext('2d');
-  charts.categoria = new Chart(ctx, {
+  let acum = 0;
+  const acumulado = chaves.map(k => (acum += contagem[k]));
+  const opts = opcoesPadrao();
+  opts.scales.y1 = {
+    position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
+    ticks: { precision: 0, font: { size: 10 } }
+  };
+
+  criarChart('cadastro', 'chartCadastro', {
     type: 'bar',
     data: {
-      labels,
-      datasets: [{
-        label: 'Inscritos',
-        data: valores,
-        backgroundColor: '#6366f1',
-        borderRadius: 6
-      }]
+      labels: chaves.map(isoParaBR),
+      datasets: [
+        { label: 'Cadastros no dia', data: chaves.map(k => contagem[k]),
+          backgroundColor: 'rgba(124,58,237,.55)', borderRadius: 4, yAxisID: 'y', order: 2 },
+        { type: 'line', label: 'Acumulado', data: acumulado, borderColor: '#2563eb',
+          backgroundColor: '#2563eb', tension: .3, pointRadius: 2, yAxisID: 'y1', order: 1 }
+      ]
     },
-    options: opcoesPadrao({ indexAxis: 'x' })
+    options: opts
   });
 }
 
-function renderGraficoPagamento() {
-  destruirChart('pagamento');
-  if (!colunasCSV.includes('Status Pagamento')) return;
+function renderGraficoCred() {
+  destruirChart('cred');
+  const ok = colunasCSV.includes('Credenciado') && dadosFiltrados.length > 0;
+  mostrarCard('chartCred', ok);
+  if (!ok) return;
 
-  const contagem = {};
+  let sim = 0, nao = 0, outros = 0;
   dadosFiltrados.forEach(l => {
-    const v = (l['Status Pagamento'] || '').trim() || '—';
-    contagem[v] = (contagem[v] || 0) + 1;
+    const v = String(l['Credenciado'] ?? '').trim().toLowerCase();
+    if (v === 'sim') sim++; else if (v === 'não' || v === 'nao') nao++; else outros++;
   });
-  const labels  = Object.keys(contagem);
-  const valores = Object.values(contagem);
+  const labels = ['Credenciados', 'Não credenciados'], data = [sim, nao];
+  if (outros) { labels.push('Sem informação'); data.push(outros); }
 
-  const ctx = document.getElementById('chartPagamento').getContext('2d');
-  charts.pagamento = new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels,
-      datasets: [{
-        data: valores,
-        backgroundColor: ['#22c55e','#f59e0b','#ef4444','#3b82f6','#a855f7','#9ca3af']
-      }]
-    },
+  criarChart('cred', 'chartCred', {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: ['#10b981','#ef4444','#9ca3af'], borderWidth: 0 }] },
     options: opcoesPadrao({ doughnut: true })
   });
+}
+
+function renderGraficoContagem(chave, canvasId, coluna, tipo, top = 0) {
+  destruirChart(chave);
+  const ok = !!coluna && colunasCSV.includes(coluna) && dadosFiltrados.length > 0;
+  mostrarCard(canvasId, ok);
+  if (!ok) return;
+
+  const ent = contagemPor(dadosFiltrados, coluna, top, tipo === 'pizza');
+  const labels  = ent.map(([k]) => k.length > 28 ? k.slice(0, 27) + '…' : k);
+  const valores = ent.map(([, v]) => v);
+
+  if (tipo === 'pizza') {
+    criarChart(chave, canvasId, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: valores, backgroundColor: PALETA, borderWidth: 0 }] },
+      options: opcoesPadrao({ doughnut: true })
+    });
+  } else {
+    criarChart(chave, canvasId, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Inscritos', data: valores,
+              backgroundColor: tipo === 'barH' ? '#06b6d4' : '#6366f1', borderRadius: 6 }] },
+      options: opcoesPadrao({ indexAxis: tipo === 'barH' ? 'y' : 'x', semLegenda: true })
+    });
+  }
+}
+
+function contagemPor(linhas, coluna, top = 0, agruparOutros = true) {
+  const c = {};
+  linhas.forEach(l => {
+    const v = String(l[coluna] ?? '').trim() || 'Não informado';
+    c[v] = (c[v] || 0) + 1;
+  });
+  let ent = Object.entries(c).sort((a, b) => b[1] - a[1]);
+  if (top && ent.length > top) {
+    const resto = ent.slice(top).reduce((s, [, v]) => s + v, 0);
+    ent = ent.slice(0, top);
+    if (agruparOutros) ent.push(['Outros', resto]);
+  }
+  return ent;
 }
 
 function opcoesPadrao(extra = {}) {
   const base = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
+    responsive: true, maintainAspectRatio: false, animation: false,
     plugins: {
       legend: {
+        display: !extra.semLegenda,
         position: extra.doughnut ? 'right' : 'top',
         labels: { boxWidth: 12, font: { size: 11 } }
       },
       tooltip: { enabled: true }
-    },
-    scales: (extra.doughnut || extra.pie)
-      ? {}
-      : {
-          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
-        }
+    }
   };
+  if (!extra.doughnut) {
+    const eixoValor = { beginAtZero: true, stacked: !!extra.stacked, ticks: { precision: 0, font: { size: 10 } } };
+    const eixoCat   = { grid: { display: false }, stacked: !!extra.stacked, ticks: { font: { size: 10 } } };
+    base.scales = extra.indexAxis === 'y' ? { x: eixoValor, y: eixoCat } : { x: eixoCat, y: eixoValor };
+  }
   if (extra.indexAxis) base.indexAxis = extra.indexAxis;
   return base;
 }
 
+// ---------------------------------------------
+// 9) Formatação e utilitários
+// ---------------------------------------------
+function formatarValor(campo, linha) {
+  if (campo === 'Dias Inscritos') {
+    return [...(linha.__dias || []).map(isoParaBR), ...(linha.__diasExtras || [])].join(', ');
+  }
+  const v = String(linha[campo] ?? '').trim();
+  if (!v) return '';
+  if (campo === 'Data Cadastro') {
+    const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})[ T]?(\d{2}:\d{2})?/);
+    if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}${iso[4] ? ' ' + iso[4] : ''}`;
+    return v.replace(/,\s*/, ' ');
+  }
+  return v;
+}
+
+function mascararValor(campo, v) {
+  if (!v) return v;
+  const s = String(v);
+  switch (campo) {
+    case 'CPF': {
+      const d = soDigitos(s);
+      return d.length === 11 ? `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**` : '***';
+    }
+    case 'Passaporte':
+      return s.length > 3 ? '*'.repeat(s.length - 3) + s.slice(-3) : '***';
+    case 'Email': {
+      const [u, dom] = s.split('@');
+      if (!dom) return '***';
+      const user = u.length <= 2 ? '*'.repeat(u.length) : u[0] + '*'.repeat(u.length - 2) + u.slice(-1);
+      return `${user}@${dom}`;
+    }
+    case 'Celular': {
+      const d = soDigitos(s);
+      return d.length >= 10 ? `(${d.slice(0, 2)}) *****-${d.slice(-4)}` : '*****';
+    }
+    default:
+      return s;
+  }
+}
+
+function normalizarTexto(v) {
+  return String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
 function normalizarData(bruto) {
-  bruto = bruto.trim();
-  let m = bruto.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  const s = String(bruto ?? '').trim();
+
+  // dd/mm/yyyy
+  let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
   if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  m = bruto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  // dd-mm-yyyy
+  m = s.match(/^(\d{2})-(\d{2})-(\d{4})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+
+  // yyyy-mm-dd (ISO)
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
   return null;
+}
+function chaveDataHora(bruto) {
+  const s = String(bruto ?? '').trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T]?(\d{2}:\d{2}:\d{2})?/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]} ${iso[4] || '00:00:00'}`;
+  const br = s.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[,\s]+(\d{2}:\d{2}:\d{2}))?/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]} ${br[4] || '00:00:00'}`;
+  return '';
+}
+function isoParaBR(iso) {
+  if (!iso || iso === SEM_DIA) return '—';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+const DIAS_SEMANA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+function rotuloDia(iso) {
+  if (!iso || iso === SEM_DIA) return 'Sem dia informado';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  const d = new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00`);
+  return `${m[3]}/${m[2]} (${DIAS_SEMANA[d.getDay()]})`;
+}
+function soDigitos(v) { return String(v ?? '').replace(/\D/g, ''); }
+function pct(a, b) { return b ? Math.round((a / b) * 100) + '%' : '0%'; }
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
 }
 
 // ---------------------------------------------
-// 9) Geração do PDF
+// 10) Descrição do tipo de relatório
 // ---------------------------------------------
-document.getElementById('btnGerar').addEventListener('click', gerarPDF);
+$('tipoRelatorio').addEventListener('change', atualizarDescricaoTipo);
+$('mascararDados').addEventListener('change', atualizarDescricaoTipo);
 
-function desenharCabecalhoMarca(doc, subtitulo = '') {
+function atualizarDescricaoTipo() {
+  const t = $('tipoRelatorio').value;
+  let d = TIPOS_RELATORIO[t] || '';
+  if ($('mascararDados').checked) d += '  ⚠️ Dados pessoais (CPF, passaporte, e-mail, celular) serão mascarados por LGPD.';
+  $('tipoDescricao').textContent = d;
+
+  // Coluna de assinatura só faz sentido na lista de presença
+  const lblAss = $('lblAssinatura');
+  lblAss.classList.toggle('desabilitado', t !== 'presenca');
+  $('colunaAssinatura').disabled = t !== 'presenca';
+}
+
+// ---------------------------------------------
+// 11) Geração do PDF
+// ---------------------------------------------
+$('btnGerar').addEventListener('click', gerarPDF);
+
+function desenharCabecalhoMarca(doc, subtitulo) {
   const pageW = doc.internal.pageSize.getWidth();
+  const nomeEvento = $('nomeEvento').value.trim();
 
+  // Faixa azul
   doc.setFillColor(37, 99, 235);
-  doc.rect(0, 0, pageW, 70, 'F');
+  doc.rect(0, 0, pageW, 78, 'F');
 
+  // "Logo" CF
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(40, 18, 34, 34, 6, 6, 'F');
+  doc.roundedRect(40, 20, 38, 38, 7, 7, 'F');
   doc.setTextColor(37, 99, 235);
-  doc.setFontSize(16);
+  doc.setFontSize(17);
   doc.setFont(undefined, 'bold');
-  doc.text('CF', 47, 41);
+  doc.text('CF', 48, 45);
 
+  // Nome do app
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(15);
   doc.setFont(undefined, 'bold');
-  doc.text(APP_NAME, 86, 34);
+  doc.text(APP_NAME, 90, 36);
 
+  // Linha 2: subtítulo ou nome do evento
   doc.setFont(undefined, 'normal');
   doc.setFontSize(9);
-  doc.text(subtitulo || 'Relatório de Participantes', 86, 49);
+  doc.text(nomeEvento || subtitulo || 'Relatório de Participantes', 90, 52);
 
+  // Linha 3: subtítulo (se houver nome do evento)
+  if (nomeEvento) {
+    doc.setFontSize(8);
+    doc.text(subtitulo || 'Relatório de Participantes', 90, 64);
+  }
+
+  // Versão à direita
   doc.setFontSize(8);
-  doc.text(APP_VERSION, pageW - 40, 34, { align: 'right' });
+  doc.text(APP_VERSION, pageW - 40, 36, { align: 'right' });
 
   doc.setFont(undefined, 'normal');
   doc.setTextColor(20);
@@ -786,150 +1227,311 @@ function desenharRodape(doc) {
   doc.text(`Página ${pageNum} de ${pageCount}`, pageW - 30, pageH - 18, { align: 'right' });
 }
 
-// Monta um texto legível dos filtros ativos para colocar no PDF
-function descreverFiltrosAtivos() {
-  const partes = [];
-  const cred = document.getElementById('filtroCredenciado').value;
-  if (cred) partes.push(`Credenciado = ${cred}`);
-  Object.entries(termoBuscaPorCampo).forEach(([campo, termo]) => {
-    const t = (termo || '').trim();
-    if (t) partes.push(`${campo} contém "${t}"`);
-  });
-  return partes;
+function rodapeAutoTable(doc) {
+  return () => {
+    desenharCabecalhoMarca(doc, $('tipoDescricao').dataset.subtitulo || 'Detalhamento');
+    desenharRodape(doc);
+  };
 }
 
 function gerarPDF() {
-  if (!camposSel.length || !dadosFiltrados.length) {
-    if (!dadosFiltrados.length) alert('Nenhum registro para exportar com os filtros atuais.');
+  if (!dadosFiltrados.length) {
+    alert('Nenhum participante para exportar com os filtros atuais.');
     return;
   }
-
-  const orientacao      = document.getElementById('orientacao').value;
-  const incluirGraficos = document.getElementById('incluirGraficos').checked;
-
-  const colunasPDF = colunasCSV.filter(c => camposSel.includes(c));
-  const linhas     = dadosFiltrados;
-  const filtrosAtivos = descreverFiltrosAtivos();
+  const masc = $('mascararDados').checked;
+  const tipo = $('tipoRelatorio').value;
+  const orientacao = $('orientacao').value;
+  const incluirGraficos = $('incluirGraficos').checked;
+  const incluirAssinatura = $('colunaAssinatura').checked && tipo === 'presenca';
 
   const doc = new jsPDF({ orientation: orientacao, unit: 'pt', format: 'a4' });
+  const subtitulos = {
+    completo:  'Relatório completo',
+    executivo: 'Relatório executivo',
+    presenca:  'Lista de presença',
+    tabela:    'Lista de participantes'
+  };
+  $('tipoDescricao').dataset.subtitulo = subtitulos[tipo] || 'Relatório';
 
   // ---------- PÁGINA 1: RESUMO ----------
-  desenharCabecalhoMarca(doc, 'Relatório de Participantes');
+  desenharCabecalhoMarca(doc, subtitulos[tipo]);
 
-  let y = 110;
-  doc.setFontSize(12);
-  doc.setTextColor(20);
-  doc.setFont(undefined, 'bold');
+  let y = 115;
+  doc.setFontSize(12); doc.setTextColor(20); doc.setFont(undefined, 'bold');
   doc.text('Resumo', 40, y);
-
   doc.setFont(undefined, 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(90);
-  y += 22;
-  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 40, y);
-  y += 16;
-  doc.text(`Registros no relatório: ${linhas.length} de ${dadosCSV.length}`, 40, y);
 
+  y += 20;
+  doc.setFontSize(10); doc.setTextColor(90);
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 40, y);
+  y += 15;
+  doc.text(`Registros no relatório: ${dadosFiltrados.length} de ${dadosCSV.length}`, 40, y);
+
+  const filtrosAtivos = descreverFiltrosAtivos();
   if (filtrosAtivos.length) {
-    y += 22;
-    doc.setFontSize(10);
-    doc.setTextColor(20);
-    doc.setFont(undefined, 'bold');
+    y += 20;
+    doc.setTextColor(20); doc.setFont(undefined, 'bold');
     doc.text('Filtros aplicados:', 40, y);
+    doc.setFont(undefined, 'normal'); doc.setTextColor(90);
+    filtrosAtivos.forEach(f => { y += 14; doc.text('• ' + f, 50, y); });
+  }
+  if (masc) {
+    y += 20;
+    doc.setTextColor(180, 40, 40);
+    doc.setFont(undefined, 'bold');
+    doc.text('⚠️ Dados pessoais mascarados (LGPD)', 40, y);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(90);
-    filtrosAtivos.forEach(f => {
-      y += 15;
-      doc.text('• ' + f, 50, y);
-    });
   }
+
+  // KPIs em grade
+  const kpis = calcularKPIs(dadosFiltrados);
+  y += 30;
+  doc.setTextColor(20); doc.setFont(undefined, 'bold'); doc.setFontSize(11);
+  doc.text('Indicadores', 40, y);
+  doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+
+  const colW = (doc.internal.pageSize.getWidth() - 80) / 3;
+  let kx = 40, ky = y + 18, count = 0;
+  kpis.forEach(k => {
+    doc.setDrawColor(220); doc.setFillColor(248, 250, 252);
+    doc.roundedRect(kx, ky, colW - 10, 44, 6, 6, 'FD');
+    doc.setTextColor(100); doc.setFontSize(8);
+    doc.text(k.label.toUpperCase(), kx + 8, ky + 14);
+    doc.setTextColor(20); doc.setFontSize(14); doc.setFont(undefined, 'bold');
+    doc.text(String(k.value), kx + 8, ky + 34);
+    doc.setFont(undefined, 'normal');
+    count++;
+    if (count % 3 === 0) { kx = 40; ky += 52; } else { kx += colW; }
+  });
 
   desenharRodape(doc);
 
-  // ---------- PÁGINA 2: GRÁFICOS ----------
-  if (incluirGraficos) {
+  // ---------- GRÁFICOS ----------
+  if (incluirGraficos && tipo !== 'presenca' && tipo !== 'tabela') {
     doc.addPage();
     desenharCabecalhoMarca(doc, 'Indicadores e Gráficos');
 
-    const pageW  = doc.internal.pageSize.getWidth();
+    const pageW = doc.internal.pageSize.getWidth();
     const margin = 40;
     const chartW = (pageW - margin * 3) / 2;
     const chartH = chartW * 0.62;
 
-    const imgs = [
-      { id: 'chartDias',      titulo: 'Inscritos por dia' },
-      { id: 'chartCred',      titulo: 'Credenciados vs Não credenciados' },
-      { id: 'chartCategoria', titulo: 'Inscritos por categoria' },
-      { id: 'chartPagamento', titulo: 'Status de pagamento' }
-    ];
-
     let x = margin, yG = 100;
-    imgs.forEach((cfg, i) => {
-      const canvas = document.getElementById(cfg.id);
-      if (!canvas) return;
+    let pos = 0;
+    GRAFICOS.forEach(cfg => {
+      const el = $(cfg.id);
+      if (!el || el.parentElement.style.display === 'none') return;
 
       const tmp = document.createElement('canvas');
-      tmp.width = canvas.width; tmp.height = canvas.height;
+      tmp.width = el.width; tmp.height = el.height;
       const tctx = tmp.getContext('2d');
       tctx.fillStyle = '#fff';
       tctx.fillRect(0, 0, tmp.width, tmp.height);
-      tctx.drawImage(canvas, 0, 0);
-      const dataURL = tmp.toDataURL('image/png', 1.0);
+      tctx.drawImage(el, 0, 0);
 
-      doc.setFontSize(10);
-      doc.setTextColor(60);
+      doc.setFontSize(10); doc.setTextColor(60);
       doc.text(cfg.titulo, x, yG - 6);
+      doc.addImage(tmp.toDataURL('image/png', 1.0), 'PNG', x, yG, chartW, chartH, undefined, 'FAST');
 
-      doc.addImage(dataURL, 'PNG', x, yG, chartW, chartH, undefined, 'FAST');
+      if (pos % 2 === 0) { x += chartW + margin; }
+      else { x = margin; yG += chartH + 40; }
 
-      if (i % 2 === 0) {
-        x += chartW + margin;
-      } else {
-        x = margin;
-        yG += chartH + 40;
+      pos++;
+      if (pos % 4 === 0 && pos < GRAFICOS.length) {
+        doc.addPage();
+        desenharCabecalhoMarca(doc, 'Indicadores e Gráficos');
+        x = margin; yG = 100;
       }
     });
 
     desenharRodape(doc);
   }
 
-  // ---------- PÁGINA 3+: TABELA ----------
-  doc.addPage();
-  desenharCabecalhoMarca(doc, 'Detalhamento');
+  // ---------- TABELAS AUXILIARES (completo) ----------
+  if (tipo === 'completo') {
+    // Resumo por dia
+    if (colunasCSV.includes('Dias Inscritos')) {
+      doc.addPage();
+      desenharCabecalhoMarca(doc, 'Resumo por dia do evento');
+      const res = calcularResumoDias(dadosFiltrados).filter(r => r.dia !== SEM_DIA);
+      const temCred = colunasCSV.includes('Credenciado');
+      const head = temCred
+        ? [['Dia', 'Inscritos', 'Credenciados', 'Não credenciados', 'Taxa']]
+        : [['Dia', 'Inscritos']];
+      const body = res.map(r => temCred
+        ? [rotuloDia(r.dia), r.total, r.cred, r.total - r.cred, pct(r.cred, r.total)]
+        : [rotuloDia(r.dia), r.total]);
 
-  doc.autoTable({
-    startY: 90,
-    head: [colunasPDF],
-    body: linhas.map(l => colunasPDF.map(c => l[c] ?? '')),
-    styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', valign: 'middle' },
-    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
-    margin: { left: 30, right: 30, top: 90, bottom: 50 },
-    didDrawPage: () => {
-      desenharCabecalhoMarca(doc, 'Detalhamento');
+      doc.autoTable({
+        startY: 90, head, body,
+        styles: { fontSize: 9, cellPadding: 5 },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        margin: { left: 40, right: 40, top: 90, bottom: 50 },
+        didDrawPage: rodapeAutoTable(doc)
+      });
+    }
+
+    // Tabelas de contagem (Categoria, Pagamento, Instituição, Nacionalidade)
+    const tabelas = [
+      { col: 'Categoria',        titulo: 'Inscritos por categoria' },
+      { col: 'Status Pagamento', titulo: 'Status de pagamento' },
+      { col: 'Instituição',      titulo: 'Top instituições' },
+      { col: colNacionalidade(), titulo: 'Nacionalidade' }
+    ].filter(t => t.col && colunasCSV.includes(t.col));
+
+    if (tabelas.length) {
+      doc.addPage();
+      desenharCabecalhoMarca(doc, 'Distribuições');
+      let startY = 90;
+      tabelas.forEach(t => {
+        const ent = contagemPor(dadosFiltrados, t.col, 0, false);
+        const body = ent.map(([k, v]) => [k, v, pct(v, dadosFiltrados.length)]);
+
+        if (startY > doc.internal.pageSize.getHeight() - 120) {
+          doc.addPage(); desenharCabecalhoMarca(doc, 'Distribuições'); startY = 90;
+        }
+        doc.setFontSize(11); doc.setTextColor(20); doc.setFont(undefined, 'bold');
+        doc.text(t.titulo, 40, startY);
+        doc.setFont(undefined, 'normal');
+
+        doc.autoTable({
+          startY: startY + 8,
+          head: [[t.col, 'Qtde', '%']],
+          body,
+          styles: { fontSize: 9, cellPadding: 4 },
+          headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: 'bold' },
+          margin: { left: 40, right: 40, top: 90, bottom: 50 },
+          didDrawPage: rodapeAutoTable(doc)
+        });
+        startY = doc.lastAutoTable.finalY + 26;
+      });
       desenharRodape(doc);
     }
+  }
+
+  // ---------- LISTA DE PRESENÇA ----------
+  if (tipo === 'presenca') {
+    const dias = filtros.dias.size
+      ? [...filtros.dias].filter(d => d !== SEM_DIA).sort()
+      : [...diasEvento];
+
+    if (!dias.length) {
+      alert('Nenhum dia de evento disponível para lista de presença.');
+      return;
+    }
+
+    const colunasLista = ['ID', 'Nome Completo', 'Nome Crachá', 'Instituição', 'Categoria']
+      .filter(c => colunasCSV.includes(c) || c === 'Nome Crachá');
+    const head = [...colunasLista, 'Assinatura'];
+
+    dias.forEach((dia, i) => {
+      doc.addPage();
+      desenharCabecalhoMarca(doc, `Lista de presença — ${rotuloDia(dia)}`);
+
+      const linhasDia = dadosFiltrados
+        .filter(l => l.__dias.includes(dia))
+        .sort((a, b) => cmpNome(a, b));
+
+      const body = linhasDia.map(l => [
+        ...colunasLista.map(c => masc ? mascararValor(c, l[c]) : (l[c] ?? '')),
+        '' // espaço para assinatura
+      ]);
+
+      doc.autoTable({
+        startY: 90,
+        head: [head],
+        body,
+        styles: { fontSize: 9, cellPadding: 6, minCellHeight: 22 },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        columnStyles: { [head.length - 1]: { cellWidth: 120 } },
+        margin: { left: 40, right: 40, top: 90, bottom: 50 },
+        didDrawPage: rodapeAutoTable(doc)
+      });
+
+      if (!linhasDia.length) {
+        doc.setFontSize(10); doc.setTextColor(120);
+        doc.text('Nenhum participante inscrito neste dia com os filtros atuais.', 40, 130);
+      }
+    });
+    return;
+  }
+
+  // ---------- TABELA DE PARTICIPANTES ----------
+  if (tipo !== 'executivo') {
+    doc.addPage();
+    desenharCabecalhoMarca(doc, 'Participantes');
+
+    const colunas = colunasVisiveis();
+    const head = [colunas.map(c => c)];
+    const body = dadosFiltrados.map(l =>
+      colunas.map(c => {
+        const v = formatarValor(c, l);
+        return masc ? mascararValor(c, v) : v;
+      })
+    );
+
+    // Coluna extra de assinatura se solicitado
+    if (incluirAssinatura) {
+      head[0].push('Assinatura');
+      body.forEach(r => r.push(''));
+    }
+
+    const colStyles = {};
+    if (incluirAssinatura) colStyles[head[0].length - 1] = { cellWidth: 110 };
+
+    doc.autoTable({
+      startY: 90,
+      head,
+      body,
+      styles: { fontSize: 7.5, cellPadding: 4, overflow: 'linebreak', valign: 'middle' },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      columnStyles: colStyles,
+      margin: { left: 30, right: 30, top: 90, bottom: 50 },
+      didDrawPage: rodapeAutoTable(doc)
+    });
+  }
+
+  // ---------- SALVAR ----------
+  const nomeEvento = $('nomeEvento').value.trim().replace(/[^\w\-]+/g, '_').slice(0, 40);
+  const data = new Date().toISOString().slice(0, 10);
+  const sufixo = { completo: 'Completo', executivo: 'Executivo', presenca: 'Presenca', tabela: 'Participantes' }[tipo];
+  const nomeArq = `CredenciaFacil_${sufixo}${nomeEvento ? '_' + nomeEvento : ''}_${data}.pdf`;
+  doc.save(nomeArq);
+}
+
+// ---------------------------------------------
+// 12) Exportar CSV filtrado
+// ---------------------------------------------
+$('btnCSV').addEventListener('click', () => {
+  if (!dadosFiltrados.length) { alert('Nada para exportar.'); return; }
+  const masc = $('mascararDados').checked;
+  const colunas = colunasVisiveis();
+  const linhas = dadosFiltrados.map(l => {
+    const o = {};
+    colunas.forEach(c => {
+      let v = formatarValor(c, l);
+      if (masc) v = mascararValor(c, v);
+      o[c] = v;
+    });
+    return o;
   });
+  const csv = Papa.unparse(linhas, { quotes: true });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `CredenciaFacil_Participantes_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
 
-  const dataArquivo = new Date().toISOString().slice(0, 10);
-  doc.save(`CredenciaFacil_Relatorio_${dataArquivo}.pdf`);
-}
-
-// ---------------------------------------------
-// Util
-// ---------------------------------------------
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, s => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[s]));
-}
-function slugify(str) {
-  return String(str)
-    .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
+// Inicializa descrição
+atualizarDescricaoTipo();
 </script>
 </body>
 </html>
